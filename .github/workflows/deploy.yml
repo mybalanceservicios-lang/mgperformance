@@ -2,7 +2,7 @@ name: Publicar web
 
 on:
   push:
-    branches: [main]
+    branches: [main, claude/wizardly-pasteur-dq03tc]
   workflow_dispatch:
 
 permissions:
