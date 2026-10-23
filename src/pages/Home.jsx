@@ -4,7 +4,6 @@ import { motion } from 'motion/react';
 import { ArrowDown, BadgeCheck, Camera, ChevronRight, MessageCircle, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
 import Aurora from '@/components/reactbits/Aurora';
 import BlurText from '@/components/reactbits/BlurText';
-import CountUp from '@/components/reactbits/CountUp';
 import StarBorder from '@/components/reactbits/StarBorder';
 import SpotlightCard from '@/components/reactbits/SpotlightCard';
 import { ShimmeringText } from '@/components/elevenlabs/shimmering-text';
@@ -19,11 +18,6 @@ const Orb = lazy(() => import('@/components/elevenlabs/orb').then(m => ({ defaul
 
 function Hero({ products }) {
   const available = products.filter(p => p.status !== 'vendido');
-  const withBattery = available.filter(p => p.battery != null);
-  const avgBattery = withBattery.length
-    ? Math.round(withBattery.reduce((s, p) => s + Number(p.battery), 0) / withBattery.length)
-    : 0;
-  const models = new Set(available.map(p => p.model)).size;
   const sample = available.find(p => p.battery >= 90) ?? available[0];
 
   return (
@@ -91,25 +85,6 @@ function Hero({ products }) {
             </a>
           </motion.div>
 
-          <motion.dl
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.95, duration: 0.6 }}
-            className="neu mt-10 grid max-w-lg grid-cols-3 divide-x divide-white/5 py-4"
-          >
-            {[
-              { n: available.reduce((u, p) => u + (Number(p.stock) || 1), 0), label: 'Equipos en stock' },
-              { n: avgBattery, label: 'Batería promedio', suffix: '%' },
-              { n: models, label: 'Modelos' }
-            ].map(s => (
-              <div key={s.label} className="px-4 text-center">
-                <dd className="text-2xl font-extrabold tabular-nums md:text-3xl">
-                  <CountUp to={s.n} duration={1.6} suffix={s.suffix ?? ''} />
-                </dd>
-                <dt className="mt-0.5 text-[11px] font-medium text-muted md:text-xs">{s.label}</dt>
-              </div>
-            ))}
-          </motion.dl>
         </div>
 
         {/* Orb de ElevenLabs dentro de un "pozo" neumórfico, con widgets estilo iOS flotando */}

@@ -34,6 +34,8 @@ export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith('/admin');
   const isProduct = pathname.startsWith('/producto');
+  // Los vendidos desaparecen de la tienda (siguen en el sistema de gestión)
+  const shop = products.filter(p => p.status !== 'vendido');
 
   return (
     <ClickSpark sparkColor="#9fc9ff" sparkSize={9} sparkRadius={22} sparkCount={8} duration={420} style={{ minHeight: '100dvh' }}>
@@ -44,8 +46,8 @@ export default function App() {
         </div>
       )}
       <Routes>
-        <Route path="/" element={<Home products={products} loading={loading} />} />
-        <Route path="/producto/:id" element={<Product products={products} loading={loading} />} />
+        <Route path="/" element={<Home products={shop} loading={loading} />} />
+        <Route path="/producto/:id" element={<Product products={shop} loading={loading} />} />
         <Route
           path="/admin/*"
           element={
@@ -54,7 +56,7 @@ export default function App() {
             </Suspense>
           }
         />
-        <Route path="*" element={<Home products={products} loading={loading} />} />
+        <Route path="*" element={<Home products={shop} loading={loading} />} />
       </Routes>
       {!isAdmin && <Footer />}
       {!isAdmin && <CartSheet products={products} />}

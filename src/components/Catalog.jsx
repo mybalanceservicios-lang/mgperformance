@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { RotateCcw, Search, SearchX, SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { Empty, InfoTip, Segmented, Sheet, Switch } from './ui';
+import { Empty, InfoTip, Segmented, Sheet } from './ui';
 import { BATTERY_FILTERS, CONDITIONS, STORAGE_OPTIONS } from '@/config';
 import { cn, formatPrice, getCondition } from '@/lib/utils';
 
@@ -20,8 +20,7 @@ export const DEFAULT_FILTERS = {
   storage: [],
   model: 'all',
   price: null, // [min, max] o null = sin límite
-  sort: 'recientes',
-  hideSold: true
+  sort: 'recientes'
 };
 
 // Agrupa "iPhone 15 Pro Max" → "iPhone 15" para el selector de modelo
@@ -34,7 +33,6 @@ function numSort(a, b) {
 export function applyFilters(products, f) {
   const q = f.q.trim().toLowerCase();
   const list = products.filter(p => {
-    if (f.hideSold && p.status === 'vendido') return false;
     if (f.condition !== 'all' && p.condition !== f.condition) return false;
     if (f.battery && (p.battery == null || Number(p.battery) < f.battery)) return false;
     if (f.storage.length && !f.storage.includes(p.storage)) return false;
@@ -178,13 +176,6 @@ function FilterPanel({ filters, set, products, bounds }) {
         </select>
       </section>
 
-      <section className="neu-inset flex items-center justify-between gap-3 px-4 py-3">
-        <div>
-          <div className="text-sm font-semibold">Ocultar vendidos</div>
-          <div className="text-xs text-muted">Mostrar solo lo que podés llevarte</div>
-        </div>
-        <Switch checked={filters.hideSold} onChange={v => set({ hideSold: v })} label="Ocultar vendidos" />
-      </section>
     </div>
   );
 }
@@ -212,8 +203,7 @@ export default function Catalog({ products, loading, filters, setFilters }) {
     filters.battery > 0 && { key: 'battery', label: `Batería +${filters.battery}%`, clear: { battery: 0 } },
     filters.price && { key: 'price', label: `${formatPrice(filters.price[0])} – ${formatPrice(filters.price[1])}`, clear: { price: null } },
     ...filters.storage.map(s => ({ key: s, label: s, clear: { storage: filters.storage.filter(x => x !== s) } })),
-    filters.model !== 'all' && { key: 'model', label: filters.model, clear: { model: 'all' } },
-    !filters.hideSold && { key: 'sold', label: 'Incluye vendidos', clear: { hideSold: true } }
+    filters.model !== 'all' && { key: 'model', label: filters.model, clear: { model: 'all' } }
   ].filter(Boolean);
 
   const reset = () => setFilters(f => ({ ...DEFAULT_FILTERS, sort: f.sort }));
