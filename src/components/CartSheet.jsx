@@ -111,8 +111,9 @@ export default function CartSheet({ products }) {
                         <span className="w-5 text-center text-sm font-bold tabular-nums">{qty}</span>
                         <button
                           type="button"
-                          className="grid h-7 w-7 place-items-center rounded-full text-muted hover:text-ink"
+                          className="grid h-7 w-7 place-items-center rounded-full text-muted hover:text-ink disabled:opacity-30"
                           onClick={() => cart.setQty(id, qty + 1)}
+                          disabled={qty >= (product.stock ?? 1)}
                           aria-label="Sumar uno"
                         >
                           <Plus size={14} />

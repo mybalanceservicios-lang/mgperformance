@@ -98,7 +98,7 @@ function Hero({ products }) {
             className="neu mt-10 grid max-w-lg grid-cols-3 divide-x divide-white/5 py-4"
           >
             {[
-              { n: available.length, label: 'Equipos en stock' },
+              { n: available.reduce((u, p) => u + (Number(p.stock) || 1), 0), label: 'Equipos en stock' },
               { n: avgBattery, label: 'Batería promedio', suffix: '%' },
               { n: models, label: 'Modelos' }
             ].map(s => (

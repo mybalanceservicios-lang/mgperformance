@@ -12,7 +12,7 @@ import { useCart } from '@/lib/cart';
 import { waLink } from '@/lib/utils';
 import { STORE } from '@/config';
 
-const Admin = lazy(() => import('@/pages/Admin'));
+const Admin = lazy(() => import('@/admin/AdminApp'));
 
 function WhatsAppFab() {
   const cart = useCart();
@@ -40,14 +40,14 @@ export default function App() {
       {!isAdmin && <Navbar />}
       {error && (
         <div className="fixed inset-x-4 top-24 z-50 mx-auto max-w-md rounded-2xl bg-ios-red/15 p-3 text-center text-sm text-ios-red">
-          No pudimos cargar los equipos ({error}). Probá recargar la página.
+          No pudimos cargar los equipos. {error}
         </div>
       )}
       <Routes>
         <Route path="/" element={<Home products={products} loading={loading} />} />
         <Route path="/producto/:id" element={<Product products={products} loading={loading} />} />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <Suspense fallback={null}>
               <Admin products={products} reload={reload} />

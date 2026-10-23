@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { listProducts, resolveMediaUrl } from './store';
+import { friendlyError } from './supabase';
 
 export function useProducts() {
   const [products, setProducts] = useState([]);
@@ -11,7 +12,7 @@ export function useProducts() {
       setError(null);
       setProducts(await listProducts());
     } catch (e) {
-      setError(e.message ?? String(e));
+      setError(friendlyError(e));
     } finally {
       setLoading(false);
     }

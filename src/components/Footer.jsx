@@ -29,7 +29,7 @@ export default function Footer() {
         <div className="space-y-3 text-sm">
           <h3 className="text-xs font-semibold tracking-widest text-faint uppercase">Tienda</h3>
           <a href="#/" className="block text-muted hover:text-ink">Ver equipos</a>
-          <Link to="/admin" className="block text-muted hover:text-ink">Panel de carga</Link>
+          <Link to="/admin" className="block text-muted hover:text-ink">Acceso equipo</Link>
         </div>
       </div>
       <p className="mt-6 text-center text-xs text-faint">

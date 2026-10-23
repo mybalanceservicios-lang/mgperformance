@@ -186,6 +186,7 @@ export default function Product({ products, loading }) {
             <ConditionBadge condition={product.condition} />
             <StatusBadge status={product.status} />
             {product.featured && <span className="chip bg-ios-orange/15 text-ios-orange">Destacado</span>}
+            {product.stock > 1 && <span className="chip bg-ios-blue/15 text-ios-blue">{product.stock} unidades</span>}
           </div>
           <h1 className="mt-3 text-4xl font-extrabold md:text-5xl">{product.model}</h1>
           <p className="mt-1 text-lg text-muted">{[product.storage, product.color].filter(Boolean).join(' · ')}</p>

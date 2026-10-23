@@ -1,30 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Camera,
-  Eye,
-  Loader2,
-  LogOut,
-  Pencil,
-  Plus,
-  RotateCcw,
-  Search,
-  Star,
-  Trash2,
-  UploadCloud,
-  X
-} from 'lucide-react';
-import { Logo } from '@/components/Navbar';
+import { ArrowLeft, ArrowRight, Eye, Loader2, Minus, Plus, UploadCloud, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import { BatteryIcon, batteryColor, ConditionBadge, Empty, InfoTip, MediaView, PhoneMock, Segmented, Switch } from '@/components/ui';
+import { BatteryIcon, batteryColor, InfoTip, MediaView, Segmented, Switch } from '@/components/ui';
 import { CONDITIONS, STATUSES, STORAGE_OPTIONS, STORE } from '@/config';
-import { isDemo } from '@/lib/supabase';
-import { deleteMedia, deleteProduct, getSession, resetDemo, saveProduct, signIn, signOut, uploadMedia } from '@/lib/store';
-import { cn, formatPrice, getCondition } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
+import { deleteMedia, saveProduct, setOwnerPrice, uploadMedia } from '@/lib/store';
+import { cn, formatPrice } from '@/lib/utils';
 
 const MODELS = [
   'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone Air', 'iPhone 17',
@@ -52,62 +33,9 @@ const EMPTY = {
   warranty: '3 meses',
   status: 'disponible',
   featured: false,
-  media: []
+  media: [],
+  stock: 1
 };
-
-/* ─────────────── Login ─────────────── */
-function Login({ onDone }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  const submit = async e => {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    try {
-      await signIn(email, password);
-      onDone();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <form onSubmit={submit} className="neu w-full max-w-sm p-7">
-        <Logo />
-        <h1 className="mt-7 text-2xl font-bold">Panel de carga</h1>
-        <p className="mt-1 text-sm text-muted">Entrá para crear y editar publicaciones.</p>
-        {isDemo && (
-          <p className="mt-4 rounded-2xl bg-ios-orange/10 p-3 text-xs leading-relaxed text-ios-orange">
-            Modo demo: la contraseña es <b>{STORE.demoAdminPassword}</b>. Lo que cargues se guarda solo en este navegador.
-          </p>
-        )}
-        <div className="mt-6 space-y-4">
-          {!isDemo && (
-            <div>
-              <label className="label" htmlFor="email">Email</label>
-              <input id="email" type="email" autoComplete="email" className="field" value={email} onChange={e => setEmail(e.target.value)} required />
-            </div>
-          )}
-          <div>
-            <label className="label" htmlFor="pass">Contraseña</label>
-            <input id="pass" type="password" autoComplete="current-password" className="field" value={password} onChange={e => setPassword(e.target.value)} required />
-          </div>
-          {error && <p className="text-sm text-ios-red">{error}</p>}
-          <button className="btn btn-primary w-full" disabled={busy}>
-            {busy && <Loader2 size={18} className="animate-spin" />} Entrar
-          </button>
-          <Link to="/" className="btn btn-ghost w-full">Volver a la tienda</Link>
-        </div>
-      </form>
-    </main>
-  );
-}
 
 /* ─────────────── Carga de fotos y videos ─────────────── */
 function MediaUploader({ media, onChange }) {
@@ -269,8 +197,9 @@ function Step({ n, title, hint, children }) {
   );
 }
 
-function ProductForm({ initial, onClose, onSaved }) {
+export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerPrice }) {
   const [p, setP] = useState(() => ({ ...EMPTY, ...initial }));
+  const [rend, setRend] = useState(ownerPrice ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const set = patch => setP(prev => ({ ...prev, ...patch }));
@@ -289,6 +218,7 @@ function ProductForm({ initial, onClose, onSaved }) {
     setError('');
     try {
       const saved = await saveProduct(p);
+      if (isOwner && String(rend) !== String(ownerPrice ?? '')) await setOwnerPrice(saved.id, rend);
       onSaved(saved, isNew);
     } catch (err) {
       setError(err.message);
@@ -399,6 +329,42 @@ function ProductForm({ initial, onClose, onSaved }) {
                 <label className="label" htmlFor="cprice">Precio anterior (opcional)</label>
                 <input id="cprice" type="number" inputMode="numeric" min="0" className="field" value={p.compare_price ?? ''} onChange={e => set({ compare_price: e.target.value })} placeholder="Ej: 920" />
               </div>
+              <div>
+                <span className="label flex items-center gap-1">
+                  Unidades en stock
+                  <InfoTip title="Stock">Cuántos equipos iguales tenés. Cada venta registrada descuenta uno; al llegar a 0 la publicación pasa sola a “Vendido”.</InfoTip>
+                </span>
+                <div className="neu-inset flex items-center justify-between rounded-2xl p-1.5">
+                  <button type="button" className="icon-btn btn-neu !h-10 !w-10" onClick={() => set({ stock: Math.max(0, (Number(p.stock) || 0) - 1) })} aria-label="Restar unidad">
+                    <Minus size={16} />
+                  </button>
+                  <span className="text-xl font-bold tabular-nums">{p.stock ?? 0}</span>
+                  <button type="button" className="icon-btn btn-neu !h-10 !w-10" onClick={() => set({ stock: (Number(p.stock) || 0) + 1 })} aria-label="Sumar unidad">
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+              {isOwner ? (
+                <div>
+                  <label className="label flex items-center gap-1" htmlFor="rend">
+                    Precio a rendir ({STORE.currency})
+                    <InfoTip title="Precio a rendir" align="right">Lo que el empleado te tiene que entregar por este equipo. Lo que venda por encima es su comisión. Solo lo ve el equipo, nunca el público.</InfoTip>
+                  </label>
+                  <input id="rend" type="number" inputMode="numeric" min="0" className="field" value={rend} onChange={e => setRend(e.target.value)} placeholder="Ej: 780" />
+                </div>
+              ) : (
+                <div>
+                  <span className="label">Precio a rendir</span>
+                  <div className="neu-inset flex min-h-[46px] items-center rounded-2xl px-4 text-sm text-muted">
+                    {ownerPrice != null ? formatPrice(ownerPrice) : 'Lo define el dueño'}
+                  </div>
+                </div>
+              )}
+              {isOwner && Number(rend) > 0 && Number(p.price) > 0 && (
+                <div className="sm:col-span-2 rounded-2xl bg-ios-green/10 px-4 py-3 text-sm text-ios-green">
+                  Si se vende al precio publicado, la comisión del empleado es <b>{formatPrice(Number(p.price) - Number(rend))}</b>.
+                </div>
+              )}
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="warranty">Garantía</label>
                 <input id="warranty" list="warranties" className="field" value={p.warranty ?? ''} onChange={e => set({ warranty: e.target.value })} />
@@ -430,7 +396,7 @@ function ProductForm({ initial, onClose, onSaved }) {
             </div>
           </Step>
 
-          <Step n={4} title="Publicación">
+          <Step n={4} title="Publicación" hint="El estado se actualiza solo con las ventas, pero podés cambiarlo a mano (ej: reservado).">
             <span className="label">Estado</span>
             <Segmented options={STATUSES.map(s => ({ value: s.id, label: s.label }))} value={p.status} onChange={v => set({ status: v })} />
             <p className="mt-2 text-xs text-muted">“Reservado” se sigue viendo con etiqueta. “Vendido” se oculta del catálogo (salvo que el cliente lo pida).</p>
@@ -471,182 +437,3 @@ function ProductForm({ initial, onClose, onSaved }) {
   );
 }
 
-/* ─────────────── Listado ─────────────── */
-export default function Admin({ products, reload }) {
-  const [session, setSession] = useState(undefined);
-  const [editing, setEditing] = useState(null); // null | {} | product
-  const [q, setQ] = useState('');
-  const [tab, setTab] = useState('all');
-  const [toast, setToast] = useState('');
-
-  const refreshSession = useCallback(() => getSession().then(setSession), []);
-  useEffect(() => {
-    refreshSession();
-    if (!supabase) return;
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
-    return () => data.subscription.unsubscribe();
-  }, [refreshSession]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(''), 2600);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  const list = useMemo(() => {
-    const s = q.trim().toLowerCase();
-    return products.filter(
-      p =>
-        (tab === 'all' || p.status === tab) &&
-        (!s || [p.model, p.storage, p.color].join(' ').toLowerCase().includes(s))
-    );
-  }, [products, q, tab]);
-
-  if (session === undefined) return <div className="grid min-h-dvh place-items-center"><Loader2 className="animate-spin text-muted" /></div>;
-  if (!session) return <Login onDone={refreshSession} />;
-
-  if (editing)
-    return (
-      <div className="pt-6">
-        <ProductForm
-          initial={editing}
-          onClose={() => setEditing(null)}
-          onSaved={(_, isNew) => {
-            setEditing(null);
-            reload();
-            setToast(isNew ? 'Publicación creada' : 'Cambios guardados');
-          }}
-        />
-      </div>
-    );
-
-  const quickStatus = async (p, status) => {
-    await saveProduct({ ...p, status });
-    reload();
-  };
-  const remove = async p => {
-    if (!confirm(`¿Eliminar "${p.model} ${p.storage ?? ''}"? Se borran también sus fotos y videos.`)) return;
-    await deleteProduct(p);
-    reload();
-    setToast('Publicación eliminada');
-  };
-
-  const counts = Object.fromEntries(STATUSES.map(s => [s.id, products.filter(p => p.status === s.id).length]));
-
-  return (
-    <main className="mx-auto max-w-6xl px-4 pt-6 pb-24">
-      <header className="mb-8 flex items-center justify-between gap-3">
-        <Logo />
-        <div className="flex gap-2">
-          <Link to="/" className="btn btn-neu !min-h-[42px] !px-3.5 !text-sm"><Eye size={16} /> <span className="hidden sm:inline">Ver tienda</span></Link>
-          <button
-            type="button"
-            onClick={async () => {
-              await signOut();
-              refreshSession();
-            }}
-            className="btn btn-neu !min-h-[42px] !px-3.5 !text-sm"
-            aria-label="Salir"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </header>
-
-      {isDemo && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-ios-orange/10 p-4 text-sm text-ios-orange">
-          <span>
-            <b>Modo demo.</b> Lo que cargues queda solo en este navegador. Conectá Supabase (ver README) para que lo vean todos.
-          </span>
-          <button type="button" onClick={() => confirm('¿Volver a los productos de ejemplo?') && resetDemo()} className="btn btn-ghost !text-ios-orange !text-sm">
-            <RotateCcw size={15} /> Restaurar ejemplo
-          </button>
-        </div>
-      )}
-
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Publicaciones</h1>
-          <p className="text-sm text-muted">
-            {counts.disponible} disponibles · {counts.reservado} reservados · {counts.vendido} vendidos
-          </p>
-        </div>
-        <button type="button" onClick={() => setEditing({})} className="btn btn-primary !min-h-[50px] !px-5">
-          <Plus size={20} /> Nueva publicación
-        </button>
-      </div>
-
-      <div className="mb-5 flex flex-col gap-3 md:flex-row">
-        <div className="relative flex-1">
-          <Search size={17} className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-faint" />
-          <input type="search" className="field !pl-10" placeholder="Buscar publicación…" value={q} onChange={e => setQ(e.target.value)} />
-        </div>
-        <Segmented
-          options={[{ value: 'all', label: 'Todas' }, ...STATUSES.map(s => ({ value: s.id, label: s.label }))]}
-          value={tab}
-          onChange={setTab}
-          size="sm"
-        />
-      </div>
-
-      {list.length === 0 ? (
-        <Empty
-          icon={<Camera size={26} />}
-          title={products.length ? 'No hay resultados' : 'Todavía no hay publicaciones'}
-          text={products.length ? 'Probá con otra búsqueda.' : 'Creá la primera: subí fotos, completá los datos y listo.'}
-          action={!products.length && <button className="btn btn-primary" onClick={() => setEditing({})}><Plus size={18} /> Crear publicación</button>}
-        />
-      ) : (
-        <ul className="space-y-3">
-          {list.map(p => (
-            <li key={p.id} className="neu flex items-center gap-3 p-3 md:gap-4">
-              <button type="button" onClick={() => setEditing(p)} className="h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-[#0b0d12] md:h-24 md:w-20">
-                {p.media?.[0] ? <MediaView item={p.media[0]} /> : <PhoneMock color={getCondition(p.condition).color} />}
-              </button>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="truncate font-semibold">{p.model}</span>
-                  {p.featured && <Star size={14} className="shrink-0 fill-ios-orange text-ios-orange" />}
-                </div>
-                <div className="truncate text-sm text-muted">
-                  {[p.storage, p.color, p.battery != null && `${p.battery}%`].filter(Boolean).join(' · ')}
-                </div>
-                <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                  <span className="font-bold">{formatPrice(p.price)}</span>
-                  <ConditionBadge condition={p.condition} className="hidden sm:inline-flex" />
-                  <span className="text-xs text-faint">{p.media?.length ?? 0} archivos</span>
-                </div>
-              </div>
-              <select
-                value={p.status}
-                onChange={e => quickStatus(p, e.target.value)}
-                className="field !min-h-[40px] !w-auto !py-1.5 !text-sm hidden sm:block"
-                aria-label="Cambiar estado"
-                style={{ color: p.status === 'vendido' ? 'var(--red)' : p.status === 'reservado' ? 'var(--orange)' : 'var(--green)' }}
-              >
-                {STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </select>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button type="button" onClick={() => setEditing(p)} className="icon-btn btn-neu !h-10 !w-10" aria-label="Editar"><Pencil size={16} /></button>
-                <button type="button" onClick={() => remove(p)} className="icon-btn btn-neu !h-10 !w-10 text-ios-red" aria-label="Eliminar"><Trash2 size={16} /></button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 30 }}
-            className="glass fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full px-5 py-3 text-sm font-semibold shadow-2xl"
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </main>
-  );
-}
