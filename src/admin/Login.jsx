@@ -8,6 +8,7 @@ import { listStaff, signInPin } from '@/lib/store';
 import { friendlyError } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { Avatar } from './kit';
+import RtWatermark from '@/components/RtWatermark';
 
 function PinPad({ person, onBack, onDone }) {
   const [pin, setPin] = useState('');
@@ -142,6 +143,8 @@ export default function Login({ onDone }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <RtWatermark always className="opacity-70" />
 
       {/* acceso a Inventario, abajo a la derecha */}
       {!person && inventory && (

@@ -7,7 +7,7 @@ import { waLink } from '@/lib/utils';
 
 export default function Footer() {
   return (
-    <footer id="contacto" className="mx-auto mt-20 max-w-7xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+    <footer id="contacto" className="mx-auto mt-20 max-w-7xl px-4 pb-24 md:pb-20">
       <div className="ml-panel grid gap-8 p-7 md:grid-cols-[1.3fr_1fr_1fr] md:p-10">
         <div>
           <Logo />

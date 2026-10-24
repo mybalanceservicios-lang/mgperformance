@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WaterDrop from '@/components/WaterDrop';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import RtWatermark from '@/components/RtWatermark';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Home from '@/pages/Home';
 import Product from '@/pages/Product';
@@ -69,6 +70,7 @@ export default function App() {
       </Routes>
       </ErrorBoundary>
       {!isAdmin && <Footer />}
+      {!isAdmin && <RtWatermark key={pathname} />}
       {!isAdmin && !isProduct && <WhatsAppFab />}
     </>
   );
