@@ -1,9 +1,10 @@
-// Cotización del dólar blue (valor de venta, el más alto) para mostrar precios en pesos.
-// Fuente principal: DolarApi (dolarapi.com). Respaldo: Bluelytics. Se guarda 15 minutos.
+// Cotización del dólar blue para mostrar precios en pesos (por defecto el valor de COMPRA, ver config).
+// Fuente principal: DolarApi (dolarapi.com, toma los datos de DolarHoy). Respaldo: Bluelytics.
+// Se consulta al abrir la página y se actualiza sola cada 15 minutos.
 import { useEffect, useState } from 'react';
 import { STORE } from '@/config';
 
-const KEY = 'mg_dolar_blue_v1';
+const KEY = 'mg_dolar_blue_v2';
 const TTL = 15 * 60 * 1000;
 let memo = null;
 let inflight = null;
@@ -21,7 +22,7 @@ async function fetchRate() {
   try {
     const r = await fetch('https://dolarapi.com/v1/dolares/blue', { cache: 'no-store' });
     const d = await r.json();
-    if (d?.venta) return { venta: Number(d.venta), compra: Number(d.compra), updated: d.fechaActualizacion ?? new Date().toISOString(), source: 'DolarApi' };
+    if (d?.compra || d?.venta) return { venta: Number(d.venta), compra: Number(d.compra), updated: d.fechaActualizacion ?? new Date().toISOString(), source: 'DolarApi' };
   } catch { /* probamos el respaldo */ }
   const r = await fetch('https://api.bluelytics.com.ar/v2/latest', { cache: 'no-store' });
   const d = await r.json();
@@ -66,10 +67,16 @@ export function useDolar() {
   return STORE.currency === 'USD' ? rate : null;
 }
 
+// Valor que se usa para convertir (compra o venta según config)
+export function rateValue(rate) {
+  return rate ? Number(rate[STORE.dolarField ?? 'compra']) || null : null;
+}
+
 // Precio en pesos redondeado para arriba (a $1.000 por defecto)
 export function toPesos(usd, rate, round = STORE.pesosRound ?? 1000) {
-  if (!rate?.venta || usd == null || usd === '') return null;
-  return Math.ceil((Number(usd) * rate.venta) / round) * round;
+  const v = rateValue(rate);
+  if (!v || usd == null || usd === '') return null;
+  return Math.ceil((Number(usd) * v) / round) * round;
 }
 
 export function formatARS(n) {

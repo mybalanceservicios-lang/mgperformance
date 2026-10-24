@@ -11,7 +11,7 @@ import { STORE, TRADE_IN_MESSAGE } from '@/config';
 import { cn, formatPrice, getCondition, productUrl, waLink } from '@/lib/utils';
 import { family } from '@/components/Listing';
 import Pesos from '@/components/Pesos';
-import { formatARS, toPesos, useDolar } from '@/lib/dolar';
+import { formatARS, rateValue, toPesos, useDolar } from '@/lib/dolar';
 
 function ago(iso) {
   const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
@@ -180,10 +180,10 @@ export default function Product({ products, loading }) {
               <span className="text-4xl font-light tracking-tight">{formatPrice(product.price)}</span>
               {discount > 0 && <span className="text-lg font-semibold text-ml-green">{discount}% OFF</span>}
             </div>
-            {rate?.venta && (
+            {rateValue(rate) && (
               <p className="mt-1 text-[15px] text-white/70">
                 o <Pesos usd={product.price} className="font-semibold text-white" /> en pesos
-                <span className="block text-xs text-white/40">Dólar blue del día {formatARS(rate.venta)} · se actualiza solo</span>
+                <span className="block text-xs text-white/40">Dólar blue del día {formatARS(rateValue(rate))} · se actualiza solo</span>
               </p>
             )}
           </div>

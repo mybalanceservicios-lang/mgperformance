@@ -6,7 +6,7 @@ import { formatPrice } from '@/lib/utils';
 import { STORE } from '@/config';
 import { Card, DateRange, PageHeader } from './kit';
 import { inRange, presetRange, sumBy, todayISO } from './metrics';
-import { useDolar } from '@/lib/dolar';
+import { rateValue, useDolar } from '@/lib/dolar';
 import { useEffect } from 'react';
 
 const PLATFORMS = ['Instagram', 'Facebook', 'TikTok', 'Google', 'Otro'];
@@ -19,7 +19,7 @@ export default function Ads({ ads, notify }) {
   const set = patch => setForm(f => ({ ...f, ...patch }));
   const dolar = useDolar();
   useEffect(() => {
-    if (dolar?.venta) setForm(f => (f.rate ? f : { ...f, rate: String(dolar.venta) }));
+    if (rateValue(dolar)) setForm(f => (f.rate ? f : { ...f, rate: String(rateValue(dolar)) }));
   }, [dolar]);
 
   const list = useMemo(() => inRange(ads, ...range).sort((a, b) => (a.date < b.date ? 1 : -1)), [ads, range]);
@@ -79,7 +79,7 @@ export default function Ads({ ads, notify }) {
               </div>
               {form.currency === 'ARS' ? (
                 <div>
-                  <label className="label" htmlFor="ad-rate">Dólar del día {dolar?.venta ? '(blue)' : ''}</label>
+                  <label className="label" htmlFor="ad-rate">Dólar del día {rateValue(dolar) ? '(blue)' : ''}</label>
                   <input id="ad-rate" type="number" inputMode="decimal" min="0" className="field" value={form.rate} onChange={e => set({ rate: e.target.value })} placeholder="Ej: 1200" />
                 </div>
               ) : (
