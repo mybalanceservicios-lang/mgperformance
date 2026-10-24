@@ -1,8 +1,7 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowDown, BadgeCheck, Camera, RefreshCcw, ShieldCheck } from 'lucide-react';
-import Aurora from '@/components/reactbits/Aurora';
 import BlurText from '@/components/reactbits/BlurText';
 import { ShimmeringText } from '@/components/elevenlabs/shimmering-text';
 import Listing from '@/components/Listing';
@@ -13,11 +12,64 @@ import { waLink } from '@/lib/utils';
 // three.js pesa: se carga aparte para que la página abra rápido
 const HeroVitrina = lazy(() => import('@/components/Phone3D').then(m => ({ default: m.HeroVitrina })));
 
+// Vitrina: primero una foto idéntica (carga al instante) y el 3D se suma cuando la página ya está lista
+function Showcase() {
+  const [load, setLoad] = useState(false);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
+      setLoad(true);
+    };
+    const idle = () => (window.requestIdleCallback ? window.requestIdleCallback(go, { timeout: 2500 }) : setTimeout(go, 1200));
+    if (document.readyState === 'complete') idle();
+    else window.addEventListener('load', idle, { once: true });
+    // si el visitante toca o scrollea antes, se carga en ese momento
+    const now = () => go();
+    window.addEventListener('pointerdown', now, { once: true, passive: true });
+    return () => {
+      done = true;
+      window.removeEventListener('load', idle);
+      window.removeEventListener('pointerdown', now);
+    };
+  }, []);
+
+  return (
+    <>
+      <picture>
+        <source media="(max-width: 767px)" srcSet="hero/vitrina-m.webp" />
+        <img
+          src="hero/vitrina-d.webp"
+          alt="Vitrina con iPhone 17 Pro Max naranja cósmico, iPhone 17 Pro azul, iPhone Air y iPhone 16 Pro"
+          fetchPriority="high"
+          decoding="async"
+          className={`pointer-events-none absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${ready ? 'opacity-0' : 'opacity-100'}`}
+        />
+      </picture>
+      {load && (
+        <Suspense fallback={null}>
+          <div className={`absolute inset-0 transition-opacity duration-700 ${ready ? 'opacity-100' : 'opacity-0'}`}>
+            <HeroVitrina
+              className="absolute inset-0"
+              onReady={() => setReady(true)}
+              onConsult={m => window.open(waLink(`Hola! ¿Tienen ${m.name} ${m.color}? ¿Qué precio tiene?`), '_blank')}
+            />
+          </div>
+        </Suspense>
+      )}
+    </>
+  );
+}
+
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden pt-16">
       <div className="absolute inset-0 -z-10 opacity-70">
-        <Aurora colorStops={['#5b21b6', '#2563eb', '#7c3aed']} amplitude={1.2} blend={0.6} speed={0.5} />
+        {/* fondo animado liviano (CSS, sin 3D) */}
+        <div className="hero-glow" />
       </div>
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-[#05030c]" />
 
@@ -62,12 +114,7 @@ function Hero() {
 
         <div className="relative order-1 h-[54svh] min-h-[380px] md:order-2 md:h-[660px]">
           <div className="absolute inset-[10%] -z-10 rounded-full bg-violet-600/30 blur-[90px]" />
-          <Suspense fallback={null}>
-            <HeroVitrina
-              className="absolute inset-0"
-              onConsult={m => window.open(waLink(`Hola! ¿Tienen ${m.name} ${m.color}? ¿Qué precio tiene?`), '_blank')}
-            />
-          </Suspense>
+          <Showcase />
         </div>
       </div>
     </section>

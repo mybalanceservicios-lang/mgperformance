@@ -1,6 +1,9 @@
 // iPhone hecho 100% con código (three.js): sin archivos 3D externos.
 // Se usa en la portada, en el diagnóstico de cada publicación y para generar imágenes de ejemplo.
-import { forwardRef, Suspense, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { createContext, forwardRef, Suspense, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+
+// Modo liviano (vitrina): materiales simples y sin detalles chicos, para que la página no se trabe
+const Lite = createContext(false);
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Float, Lightformer, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -25,6 +28,15 @@ function ReleaseOnUnmount() {
     },
     [gl]
   );
+  return null;
+}
+
+function ReadySignal({ onReady }) {
+  const n = useRef(0);
+  useFrame(() => {
+    n.current += 1;
+    if (n.current === 3) onReady?.();
+  });
   return null;
 }
 
@@ -302,7 +314,8 @@ function Flash({ position, r = 0.025 }) {
 function CameraModule({ variant, color, geos }) {
   const ring = color.clone().lerp(new THREE.Color('#000000'), 0.12).getStyle();
   const steel = color.clone().lerp(new THREE.Color('#a6a8ae'), 0.5).getStyle();
-  const glass = <meshPhysicalMaterial color={color} roughness={0.12} metalness={0.25} clearcoat={1} clearcoatRoughness={0.1} />;
+  const lite = useContext(Lite);
+  const glass = lite ? <meshStandardMaterial color={color} roughness={0.22} metalness={0.2} /> : <meshPhysicalMaterial color={color} roughness={0.12} metalness={0.25} clearcoat={1} clearcoatRoughness={0.1} />;
   if (variant === 'air') {
     return (
       <group position={[0, H / 2 - 0.2, 0]}>
@@ -316,7 +329,7 @@ function CameraModule({ variant, color, geos }) {
     return (
       <group position={[0, H / 2 - 0.31, 0]}>
         <mesh geometry={geos.plateau}>
-          <meshPhysicalMaterial color={color} roughness={0.38} metalness={0.35} clearcoat={0.3} clearcoatRoughness={0.5} />
+          {lite ? <meshStandardMaterial color={color} roughness={0.4} metalness={0.3} /> : <meshPhysicalMaterial color={color} roughness={0.38} metalness={0.35} clearcoat={0.3} clearcoatRoughness={0.5} />}
         </mesh>
         <group position={[-W / 2 + 0.3, 0, 0.017]}>
           <Lens position={[-0.11, 0.115, 0.012]} r={0.08} ring={ring} />
@@ -398,6 +411,7 @@ function Hotspot({ mark, active, onSelect }) {
 
 export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], activeMark, onMark, screenOn = true, ...props }) {
   const geos = useGeometries();
+  const lite = useContext(Lite);
   const tint = useMemo(() => new THREE.Color(color), [color]);
   const frame = useMemo(() => tint.clone().lerp(new THREE.Color('#9a9aa0'), 0.35), [tint]);
   const wallpaper = useMemo(() => (typeof document !== 'undefined' ? getWallpaper() : null), []);
@@ -406,8 +420,12 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
     <group {...props}>
       {/* cuerpo: [0] tapas (vidrio trasero) · [1] marco */}
       <mesh geometry={geos.body} castShadow>
-        <meshPhysicalMaterial attach="material-0" color={tint} roughness={0.42} metalness={0.15} clearcoat={0.6} clearcoatRoughness={0.4} />
-        <meshStandardMaterial attach="material-1" color={frame} roughness={0.28} metalness={0.7} />
+        {lite ? (
+          <meshStandardMaterial attach="material-0" color={tint} roughness={0.42} metalness={0.12} />
+        ) : (
+          <meshPhysicalMaterial attach="material-0" color={tint} roughness={0.42} metalness={0.15} clearcoat={0.6} clearcoatRoughness={0.4} />
+        )}
+        <meshStandardMaterial attach="material-1" color={frame} roughness={0.3} metalness={lite ? 0.45 : 0.7} />
       </mesh>
 
       {/* frente */}
@@ -426,9 +444,9 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
           <meshBasicMaterial color="#000" />
         </mesh>
         {/* vidrio frontal: reflejo sutil */}
-        <mesh geometry={geos.bezel} position={[0, 0, 0.0024]}>
+        {!lite && <mesh geometry={geos.bezel} position={[0, 0, 0.0024]}>
           <meshPhysicalMaterial color="#ffffff" transparent opacity={0.06} roughness={0} metalness={0} clearcoat={1} clearcoatRoughness={0} />
-        </mesh>
+        </mesh>}
         {marks.filter(m => m.side === 'front').map(m => (
           <Hotspot key={m.id} mark={m} active={activeMark === m.id} onSelect={onMark} />
         ))}
@@ -446,7 +464,7 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
       <mesh geometry={geos.port} position={[0, -H / 2 - 0.0005, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <meshBasicMaterial color="#050505" side={THREE.DoubleSide} />
       </mesh>
-      {[-1, 1].map(side =>
+      {!lite && [-1, 1].map(side =>
         [0, 1, 2, 3, 4].map(i => (
           <mesh key={`${side}${i}`} position={[side * (0.14 + i * 0.03), -H / 2 - 0.0005, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <circleGeometry args={[0.008, 10]} />
@@ -455,7 +473,7 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
         ))
       )}
       {/* líneas de antena */}
-      {[H / 2 - 0.14, -H / 2 + 0.14].flatMap(y =>
+      {!lite && [H / 2 - 0.14, -H / 2 + 0.14].flatMap(y =>
         [-1, 1].map(side => (
           <mesh key={`${y}${side}`} position={[side * (W / 2 + 0.0015), y, 0]} rotation={[0, side * Math.PI / 2, 0]}>
             <planeGeometry args={[DEPTH * 1.2, 0.012]} />
@@ -480,20 +498,21 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
 }
 
 /* Luces de estudio sin descargar nada (reflejos tipo foto de producto) */
-export function StudioLights({ intensity = 1 }) {
+export function StudioLights({ intensity = 1, env = true }) {
   return (
     <>
+      {!env && <hemisphereLight args={['#ffffff', '#2a1d4a', 0.9 * intensity]} />}
       <ambientLight intensity={0.6 * intensity} />
       <directionalLight position={[3, 4, 5]} intensity={1.8 * intensity} />
       <directionalLight position={[-4, 2, 3]} intensity={0.8 * intensity} />
       <directionalLight position={[0, 3, -5]} intensity={0.6 * intensity} />
-      <Environment resolution={isMobile ? 64 : 128} frames={1}>
+      {env && <Environment resolution={isMobile ? 64 : 128} frames={1}>
         <Lightformer intensity={2.4} position={[0, 4, 3]} scale={[8, 2, 1]} />
         <Lightformer intensity={1.2} position={[-5, 0, 1]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} />
         <Lightformer intensity={1.2} position={[5, 0, 1]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} />
         <Lightformer intensity={0.4} position={[0, 0, -5]} scale={[8, 4, 1]} color="#8b5cf6" />
         <Lightformer intensity={0.8} position={[0, -4, 2]} scale={[8, 2, 1]} />
-      </Environment>
+      </Environment>}
     </>
   );
 }
@@ -687,13 +706,25 @@ function Turntable({ index, drag }) {
         const front = i === index;
         return (
           <group key={i} position={[Math.sin(a) * RING, 0, Math.cos(a) * RING]}>
-            <group ref={el => (spins.current[i] = el)} scale={0.9} position={[0, -0.09, 0]}>
+            <group
+              ref={el => {
+                // arranca ya en su lugar final (así coincide con la foto de portada)
+                if (el && !el.userData.init) {
+                  el.userData.init = true;
+                  const sc = front ? 1.12 : 0.9;
+                  el.scale.setScalar(sc);
+                  el.position.y = (sc - 1) * (H / 2) - 0.04;
+                  el.rotation.y = front ? Math.PI - 0.35 : Math.PI + (Math.sin(a) > 0 ? -1 : 1) * 0.55;
+                }
+                spins.current[i] = el;
+              }}
+            >
               <PhoneModel color={p.hex} variant={p.variant} />
             </group>
             {/* pedestal */}
             <mesh position={[0, -H / 2 - 0.09, 0]}>
               <cylinderGeometry args={[0.62, 0.66, 0.08, 48]} />
-              <meshStandardMaterial color="#120c24" metalness={0.9} roughness={0.25} />
+              <meshStandardMaterial color="#1a1035" metalness={0.35} roughness={0.3} />
             </mesh>
             <mesh position={[0, -H / 2 - 0.045, 0]} rotation={[-Math.PI / 2, 0, 0]}>
               <ringGeometry args={[0.6, 0.63, 64]} />
@@ -705,7 +736,7 @@ function Turntable({ index, drag }) {
       {/* plataforma de la vitrina */}
       <mesh position={[0, -H / 2 - 0.2, 0]}>
         <cylinderGeometry args={[RING + 0.95, RING + 1.05, 0.12, 96]} />
-        <meshStandardMaterial color="#0b0718" metalness={0.85} roughness={0.3} />
+        <meshStandardMaterial color="#130b2a" metalness={0.35} roughness={0.35} />
       </mesh>
       <mesh position={[0, -H / 2 - 0.139, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[RING + 0.9, RING + 0.95, 128]} />
@@ -715,7 +746,7 @@ function Turntable({ index, drag }) {
   );
 }
 
-export function HeroVitrina({ className, onConsult }) {
+export function HeroVitrina({ className, onConsult, onReady, bare = false }) {
   const [index, setIndex] = useState(0);
   const drag = useRef(0);
   const state = useRef({ active: false, x: 0, moved: false });
@@ -760,16 +791,19 @@ export function HeroVitrina({ className, onConsult }) {
       >
         <SafeCanvas camera={{ position: [0, 0.35, RING + 6.1], fov: 30 }} dpr={[1, 1.75]}>
           <Suspense fallback={null}>
-            <StudioLights />
+            <StudioLights env={false} intensity={1.15} />
             <spotLight position={[0, 5, RING + 2]} angle={0.45} penumbra={0.8} intensity={30} color="#ffffff" />
-            <group position={[0, 0.1, -RING + 0.2]}>
-              <Turntable index={index} drag={drag} />
-            </group>
+            <Lite.Provider value>
+              <group position={[0, 0.1, -RING + 0.2]}>
+                <Turntable index={index} drag={drag} />
+              </group>
+            </Lite.Provider>
+            <ReadySignal onReady={onReady} />
           </Suspense>
         </SafeCanvas>
       </div>
       {/* controles de la vitrina */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex flex-col items-center gap-2 md:bottom-6">
+      <div style={bare ? { display: 'none' } : undefined} className="pointer-events-none absolute inset-x-0 bottom-2 flex flex-col items-center gap-2 md:bottom-6">
         <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/10 bg-black/40 py-1.5 pr-1.5 pl-1.5 backdrop-blur-md">
           <button type="button" onClick={() => go(-1)} className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-lg hover:bg-white/20" aria-label="Anterior">
             ‹

@@ -530,3 +530,21 @@ html.protected img,
 html.protected video {
   -webkit-user-drag: none;
 }
+
+/* Fondo de la portada: luces violeta y azul que se mueven suave (solo CSS, no consume 3D) */
+.hero-glow {
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(35% 40% at 25% 35%, rgba(91, 33, 182, 0.75), transparent 70%),
+    radial-gradient(30% 35% at 75% 30%, rgba(37, 99, 235, 0.6), transparent 70%),
+    radial-gradient(40% 35% at 55% 80%, rgba(124, 58, 237, 0.55), transparent 70%);
+  filter: blur(30px);
+  animation: hero-drift 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes hero-drift {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.08); }
+  100% { transform: translate3d(-2%, 3%, 0) scale(1.02); }
+}
