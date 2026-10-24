@@ -5,11 +5,11 @@ import { ConditionBadge, Empty, MediaView, PhoneMock, Segmented, Sheet } from '@
 import { createSale } from '@/lib/store';
 import { cn, formatPrice, getCondition } from '@/lib/utils';
 import { STORE } from '@/config';
-import { Avatar } from './kit';
+import { ClientPicker } from './ClientSheet';
 
 const METHODS = ['Efectivo', 'Transferencia', 'Dólares', 'Tarjeta'];
 
-export default function SaleSheet({ open, onClose, products, prices, isOwner, profiles, me, notify }) {
+export default function SaleSheet({ open, onClose, initial, products, prices, clients = [], me, notify }) {
   const [step, setStep] = useState(1);
   const [q, setQ] = useState('');
   const [productId, setProductId] = useState(null);
@@ -18,7 +18,7 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
   const [method, setMethod] = useState('Efectivo');
   const [customer, setCustomer] = useState('');
   const [notes, setNotes] = useState('');
-  const [seller, setSeller] = useState(me.id);
+  const [clientId, setClientId] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -31,9 +31,9 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
       setCustomer('');
       setNotes('');
       setError('');
-      setSeller(me.id);
+      setClientId(initial?.client_id ?? null);
     }
-  }, [open, me.id]);
+  }, [open, initial]);
 
   const available = useMemo(() => {
     const s = q.trim().toLowerCase();
@@ -46,7 +46,7 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
   const rend = product ? Number(prices[product.id] ?? 0) : 0;
   const unit = Number(price) || 0;
   const commission = (unit - rend) * qty;
-  const employees = (profiles ?? []).filter(p => p.active);
+  const myClients = clients.filter(c => c.employee_id === me.id);
 
   const pick = p => {
     setProductId(p.id);
@@ -64,9 +64,9 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
         qty,
         unit_price: unit,
         payment_method: method,
-        customer,
+        customer: customer || clients.find(c => c.id === clientId)?.name || '',
         notes,
-        employee_id: isOwner && seller !== me.id ? seller : undefined
+        client_id: clientId
       });
       notify(`Venta registrada · ${formatPrice(unit * qty)}`);
       onClose();
@@ -156,7 +156,7 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
                   <div className="mt-1 text-xl font-extrabold tabular-nums">{formatPrice(rend * qty)}</div>
                 </div>
                 <div className={cn('neu-inset p-3.5', commission < 0 && 'ring-1 ring-ios-red/50')}>
-                  <div className="text-[11px] font-semibold text-muted">{isOwner && seller === me.id ? 'Diferencia' : 'Comisión'}</div>
+                  <div className="text-[11px] font-semibold text-muted">{me.role === 'owner' ? 'Diferencia' : 'Tu comisión'}</div>
                   <div className={cn('mt-1 text-xl font-extrabold tabular-nums', commission < 0 ? 'text-ios-red' : 'text-ios-green')}>
                     {formatPrice(commission)}
                   </div>
@@ -191,30 +191,12 @@ export default function SaleSheet({ open, onClose, products, prices, isOwner, pr
                 <Segmented size="sm" options={METHODS.map(m => ({ value: m, label: m }))} value={method} onChange={setMethod} />
               </div>
 
-              {isOwner && employees.length > 1 && (
-                <div>
-                  <span className="label">¿Quién vendió?</span>
-                  <div className="no-scrollbar flex gap-2 overflow-x-auto pb-1">
-                    {employees.map(e => (
-                      <button
-                        key={e.id}
-                        type="button"
-                        onClick={() => setSeller(e.id)}
-                        aria-pressed={seller === e.id}
-                        className={cn('flex shrink-0 items-center gap-2 rounded-full py-1.5 pr-3.5 pl-1.5 text-sm font-semibold', seller === e.id ? 'shadow-[var(--neu-in)] ring-1 ring-ios-blue/60' : 'neu-sm')}
-                      >
-                        <Avatar name={e.name} owner={e.role === 'owner'} size={28} /> {e.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div>
+                <span className="label">Cliente</span>
+                <ClientPicker clients={myClients} value={clientId} onChange={id => setClientId(id)} />
+              </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="label" htmlFor="sale-customer">Cliente (opcional)</label>
-                  <input id="sale-customer" className="field" value={customer} onChange={e => setCustomer(e.target.value)} placeholder="Nombre o teléfono" />
-                </div>
+              <div>
                 <div>
                   <label className="label" htmlFor="sale-notes">Nota (opcional)</label>
                   <input id="sale-notes" className="field" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: entregó iPhone 11 en parte de pago" />

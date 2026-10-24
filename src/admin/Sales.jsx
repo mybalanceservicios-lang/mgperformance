@@ -78,7 +78,9 @@ function toCsv(rows, nameOf) {
   return [head, ...lines].map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
 }
 
-export default function Sales({ sales, isOwner, profiles, nameOf, notify, openSale }) {
+export default function Sales({ sales: allSales, ownerMode, me, profiles, nameOf, notify, openSale }) {
+  const isOwner = ownerMode;
+  const sales = ownerMode ? allSales : allSales.filter(s => s.employee_id === me.id);
   const [period, setPeriod] = useState('mes');
   const [seller, setSeller] = useState('all');
   const [state, setState] = useState('all');

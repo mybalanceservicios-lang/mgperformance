@@ -6,6 +6,7 @@ import { BatteryIcon, batteryColor, InfoTip, MediaView, Segmented, Switch } from
 import { CONDITIONS, STATUSES, STORAGE_OPTIONS, STORE } from '@/config';
 import { deleteMedia, saveProduct, setOwnerPrice, uploadMedia } from '@/lib/store';
 import { cn, formatPrice } from '@/lib/utils';
+import DiagnosticEditor from './DiagnosticEditor';
 
 const MODELS = [
   'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone Air', 'iPhone 17',
@@ -34,7 +35,8 @@ const EMPTY = {
   status: 'disponible',
   featured: false,
   media: [],
-  stock: 1
+  stock: 1,
+  diagnostics: { checks: {}, marks: [] }
 };
 
 /* ─────────────── Carga de fotos y videos ─────────────── */
@@ -209,7 +211,7 @@ export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerP
     if (p.condition === 'nuevo' && p.battery !== 100) set({ battery: 100 });
   }, [p.condition]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const missing = [!p.model && 'modelo', !p.price && 'precio'].filter(Boolean);
+  const missing = [!p.model && 'modelo', !p.storage && 'capacidad', !p.color && 'color', !p.price && 'precio', isOwner && !rend && rend !== 0 && 'precio a rendir'].filter(Boolean);
 
   const submit = async e => {
     e.preventDefault();
@@ -396,7 +398,11 @@ export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerP
             </div>
           </Step>
 
-          <Step n={4} title="Publicación" hint="El estado se actualiza solo con las ventas, pero podés cambiarlo a mano (ej: reservado).">
+          <Step n={4} title="Diagnóstico 3D" hint="Lo que el cliente ve al girar el iPhone 3D: chequeos y rayones con su video.">
+            <DiagnosticEditor value={p.diagnostics} onChange={diagnostics => set({ diagnostics })} product={p} onAddMedia={item => set({ media: [...(p.media ?? []), item] })} />
+          </Step>
+
+          <Step n={5} title="Publicación" hint="El estado se actualiza solo con las ventas, pero podés cambiarlo a mano (ej: reservado).">
             <span className="label">Estado</span>
             <Segmented options={STATUSES.map(s => ({ value: s.id, label: s.label }))} value={p.status} onChange={v => set({ status: v })} />
             <p className="mt-2 text-xs text-muted">“Reservado” se sigue viendo con etiqueta. “Vendido” se oculta del catálogo (salvo que el cliente lo pida).</p>
@@ -420,7 +426,7 @@ export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerP
         </aside>
       </div>
 
-      <div className="glass fixed inset-x-0 bottom-0 z-40 border-x-0 border-b-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="glass fixed inset-x-0 bottom-0 z-40 border-x-0 border-b-0 px-4 pt-3 lg:left-[250px] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="mx-auto flex max-w-6xl items-center gap-3">
           <p className="hidden flex-1 text-sm text-muted sm:block">
             {error ? <span className="text-ios-red">{error}</span> : missing.length ? `Falta: ${missing.join(', ')}` : 'Todo listo para publicar ✓'}

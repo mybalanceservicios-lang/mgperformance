@@ -2,15 +2,10 @@
 // En modo demo se muestran ejemplos para ver el diseño.
 import { useEffect, useState } from 'react';
 import { isDemo, supabase } from './supabase';
-
-const DEMO_REVIEWS = [
-  { id: 'r1', name: 'Ejemplo · Cliente 1', rating: 5, text: 'Reseña de ejemplo: así se ve un comentario de un cliente con su compra.', model: 'iPhone 15 Pro' },
-  { id: 'r2', name: 'Ejemplo · Cliente 2', rating: 5, text: 'Reseña de ejemplo: se reemplaza por los comentarios reales desde el sistema.', model: 'iPhone 14' },
-  { id: 'r3', name: 'Ejemplo · Cliente 3', rating: 5, text: 'Reseña de ejemplo: también se puede subir la foto que el cliente compartió en Instagram.', model: 'iPhone 13 Pro Max' }
-];
+import { listRows } from './store';
 
 export async function listReviews() {
-  if (isDemo) return DEMO_REVIEWS;
+  if (isDemo) return (await listRows('reviews')).filter(r => r.active !== false);
   const { data, error } = await supabase.from('reviews').select('*').eq('active', true).order('created_at', { ascending: false });
   if (error) return [];
   return data;

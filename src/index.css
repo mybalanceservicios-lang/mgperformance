@@ -158,12 +158,12 @@ h3,
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, #2a95ff, #0a7bf0);
+  background: linear-gradient(180deg, #8b5cf6, #6d28d9);
   color: #fff;
-  box-shadow: 0 10px 26px -10px rgba(10, 132, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 26px -10px rgba(124, 58, 237, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 .btn-primary:hover {
-  box-shadow: 0 14px 34px -10px rgba(10, 132, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  box-shadow: 0 14px 34px -10px rgba(124, 58, 237, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .btn-wa {

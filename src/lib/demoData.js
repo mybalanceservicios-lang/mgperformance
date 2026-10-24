@@ -68,27 +68,45 @@ export const DEMO_PRODUCTS = RAW.map((p, i) => {
 });
 
 export const DEMO_PROFILES = [
-  { id: 'owner', name: 'Dueño', email: 'dueno@demo', role: 'owner', active: true },
-  { id: 'emp-1', name: 'Lucas', email: 'lucas@demo', role: 'employee', active: true },
-  { id: 'emp-2', name: 'Sofi', email: 'sofi@demo', role: 'employee', active: true }
+  { id: 'alte', slug: 'alte', name: 'Alte', role: 'employee', active: true, sort: 1, phone: '' },
+  { id: 'tito', slug: 'tito', name: 'Tito', role: 'employee', active: true, sort: 2, phone: '' },
+  { id: 'tomas', slug: 'tomas', name: 'Tomás', role: 'employee', active: true, sort: 3, phone: '' },
+  { id: 'matias', slug: 'matias', name: 'Matías', role: 'owner', active: true, sort: 4, phone: '' },
+  { id: 'inventario', slug: 'inventario', name: 'Inventario', role: 'inventory', active: true, sort: 99, phone: '' }
 ];
-export const DEMO_PASSWORDS = { owner: 'admin', employee: '1234' };
+// Claves de ejemplo del modo demo (en la base real se cambian desde Modo dueño → Equipo)
+export const DEMO_PINS = { alte: '1111', tito: '2222', tomas: '3333', matias: '7777', inventario: '9999' };
 
 // Precio a rendir = ~88% del precio publicado (redondeado a 10)
 export const DEMO_PRICES = Object.fromEntries(
   DEMO_PRODUCTS.map(p => [p.id, Math.round((p.price * 0.88) / 10) * 10])
 );
 
-// Historial de ventas de ejemplo de las últimas 3 semanas
+let seed = 42;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const pick = arr => arr[Math.floor(rnd() * arr.length)];
+const isoDay = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+
+const NAMES = ['Juan Pérez', 'Caro Gómez', 'Nico Díaz', 'Flor Romero', 'Martín Ruiz', 'Agus Sosa', 'Lu Fernández', 'Santi Álvarez', 'Meli Torres', 'Fede Castro', 'Juli Medina', 'Pato Herrera'];
+export const DEMO_CLIENTS = NAMES.map((name, i) => ({
+  id: `cli-${i}`,
+  created_at: new Date(Date.now() - (i + 2) * 86400000 * 2).toISOString(),
+  employee_id: ['alte', 'tito', 'tomas', 'matias'][i % 4],
+  name,
+  phone: `54911${String(40000000 + i * 1234567).slice(0, 8)}`,
+  interest: pick(['iPhone 15 Pro', 'iPhone 14', 'iPhone 13', 'iPhone 16 Pro Max', 'Entrega su 11']),
+  notes: ''
+}));
+
+// Historial de ventas de ejemplo de las últimas 7 semanas
 export const DEMO_SALES = (() => {
-  let seed = 42;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const methods = ['Efectivo', 'Transferencia', 'Dólares', 'Tarjeta'];
   const out = [];
-  for (let i = 0; i < 26; i++) {
-    const p = DEMO_PRODUCTS[Math.floor(rnd() * DEMO_PRODUCTS.length)];
-    const emp = rnd() > 0.45 ? 'emp-1' : 'emp-2';
-    const daysAgo = Math.floor(rnd() * 21);
+  for (let i = 0; i < 40; i++) {
+    const p = pick(DEMO_PRODUCTS);
+    const emp = pick(['alte', 'alte', 'tito', 'tito', 'tomas', 'matias']);
+    const client = DEMO_CLIENTS.find(c => c.employee_id === emp);
+    const daysAgo = Math.floor(rnd() * 50);
     const date = new Date(Date.now() - daysAgo * 86400000 - Math.floor(rnd() * 8) * 3600000);
     const unit = p.price + Math.round((rnd() * 60 - 20) / 10) * 10;
     out.push({
@@ -97,11 +115,12 @@ export const DEMO_SALES = (() => {
       product_id: p.id,
       product_label: [p.model, p.storage, p.color].join(' · '),
       employee_id: emp,
+      client_id: client?.id ?? null,
       qty: 1,
       unit_price: unit,
       owner_price: DEMO_PRICES[p.id],
-      payment_method: methods[Math.floor(rnd() * methods.length)],
-      customer: '',
+      payment_method: pick(methods),
+      customer: client?.name ?? '',
       notes: '',
       settled: daysAgo > 6,
       settled_at: daysAgo > 6 ? date.toISOString() : null
@@ -109,3 +128,50 @@ export const DEMO_SALES = (() => {
   }
   return out.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 })();
+
+export const DEMO_REMINDERS = (() => {
+  const out = [];
+  const titles = ['Viene a ver el equipo', 'Pasa a buscar', 'Recordarle la seña', 'Trae su usado para cotizar', 'Seguimiento por WhatsApp'];
+  for (let i = 0; i < 18; i++) {
+    const c = pick(DEMO_CLIENTS);
+    const d = new Date();
+    d.setDate(d.getDate() + Math.floor(rnd() * 24) - 8);
+    out.push({
+      id: `rem-${i}`,
+      created_at: new Date().toISOString(),
+      employee_id: c.employee_id,
+      client_id: c.id,
+      date: isoDay(d),
+      time: `${10 + Math.floor(rnd() * 9)}:${pick(['00', '30'])}`,
+      title: pick(titles),
+      notes: '',
+      done: d < new Date() && rnd() > 0.3
+    });
+  }
+  return out;
+})();
+
+export const DEMO_ADS = (() => {
+  const out = [];
+  for (let i = 0; i < 10; i++) {
+    const d = new Date(Date.now() - Math.floor(rnd() * 55) * 86400000);
+    out.push({ id: `ad-${i}`, created_at: d.toISOString(), date: isoDay(d), platform: pick(['Instagram', 'Instagram', 'Facebook', 'TikTok', 'Google']), amount: Math.round(rnd() * 90 + 20), notes: '' });
+  }
+  return out;
+})();
+
+export const DEMO_PURCHASES = (() => {
+  const out = [];
+  for (let i = 0; i < 6; i++) {
+    const p = pick(DEMO_PRODUCTS);
+    const d = new Date(Date.now() - Math.floor(rnd() * 55) * 86400000);
+    out.push({ id: `pur-${i}`, created_at: d.toISOString(), date: isoDay(d), description: `${p.model} ${p.storage}`, qty: 1 + Math.floor(rnd() * 3), unit_cost: Math.round(p.price * 0.75 / 10) * 10, supplier: '', notes: '' });
+  }
+  return out;
+})();
+
+export const DEMO_REVIEWS = [
+  { id: 'r1', created_at: new Date().toISOString(), name: 'Ejemplo · Cliente 1', rating: 5, text: 'Reseña de ejemplo: así se ve un comentario de un cliente con su compra.', model: 'iPhone 15 Pro', photo_url: '', active: true },
+  { id: 'r2', created_at: new Date().toISOString(), name: 'Ejemplo · Cliente 2', rating: 5, text: 'Reseña de ejemplo: se reemplaza por los comentarios reales desde el sistema.', model: 'iPhone 14', photo_url: '', active: true },
+  { id: 'r3', created_at: new Date().toISOString(), name: 'Ejemplo · Cliente 3', rating: 5, text: 'Reseña de ejemplo: también se puede subir la foto que el cliente compartió en Instagram.', model: 'iPhone 13 Pro Max', photo_url: '', active: true }
+];

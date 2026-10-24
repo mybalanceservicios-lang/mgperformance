@@ -1,17 +1,36 @@
 // Capa de datos: usa Supabase si está configurado; si no, guarda todo en el navegador (modo demo).
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { supabase, isDemo, BUCKET } from './supabase';
-import { DEMO_PASSWORDS, DEMO_PRICES, DEMO_PRODUCTS, DEMO_PROFILES, DEMO_SALES } from './demoData';
+import { DEMO_ADS, DEMO_CLIENTS, DEMO_PINS, DEMO_PRICES, DEMO_PRODUCTS, DEMO_PROFILES, DEMO_PURCHASES, DEMO_REMINDERS, DEMO_REVIEWS, DEMO_SALES } from './demoData';
 import { uid } from './utils';
 
 const K = {
   products: 'mg_products_v3',
   prices: 'mg_prices_v3',
-  sales: 'mg_sales_v3',
-  profiles: 'mg_profiles_v3',
+  sales: 'mg_sales_v4',
+  profiles: 'mg_profiles_v4',
+  pins: 'mg_pins_v4',
+  clients: 'mg_clients_v4',
+  reminders: 'mg_reminders_v4',
+  ads: 'mg_ads_v4',
+  purchases: 'mg_purchases_v4',
+  reviews: 'mg_reviews_v4',
   session: 'mg_demo_user'
 };
-const DEFAULTS = { products: DEMO_PRODUCTS, prices: DEMO_PRICES, sales: DEMO_SALES, profiles: DEMO_PROFILES };
+const DEFAULTS = {
+  products: DEMO_PRODUCTS,
+  prices: DEMO_PRICES,
+  sales: DEMO_SALES,
+  profiles: DEMO_PROFILES,
+  pins: DEMO_PINS,
+  clients: DEMO_CLIENTS,
+  reminders: DEMO_REMINDERS,
+  ads: DEMO_ADS,
+  purchases: DEMO_PURCHASES,
+  reviews: DEMO_REVIEWS
+};
+const STAFF_DOMAIN = 'staff.mgperformance.app';
+const pinPassword = pin => `mg-${pin}-pin`;
 
 const FIELDS = ['model', 'storage', 'color', 'condition', 'battery', 'price', 'compare_price', 'description', 'includes', 'warranty', 'status', 'featured', 'media', 'stock', 'diagnostics'];
 
@@ -126,7 +145,8 @@ export async function createSale(sale) {
     unit_price: Number(sale.unit_price),
     payment_method: sale.payment_method || null,
     customer: sale.customer || null,
-    notes: sale.notes || null
+    notes: sale.notes || null,
+    client_id: sale.client_id || null
   };
   if (isDemo) {
     const me = demoUser();
@@ -202,9 +222,6 @@ export async function updateProfile(id, patch) {
   notify();
 }
 
-export async function addDemoEmployee(name) {
-  write('profiles', [...read('profiles'), { id: uid(), name, email: '', role: 'employee', active: true }]);
-}
 
 /* ═════════════ Fotos y videos ═════════════ */
 const MAX_IMAGE_SIDE = 1800;
@@ -261,7 +278,65 @@ export async function resolveMediaUrl(url) {
   return objectUrl;
 }
 
-/* ═════════════ Acceso ═════════════ */
+/* ═════════════ Tablas simples (clientes, calendario, publicidad, inversión, reseñas) ═════════════ */
+// Con Supabase, la seguridad (quién ve qué) la resuelven las reglas RLS de la base.
+const TABLES = { clients: 'clients', reminders: 'reminders', ads: 'ad_expenses', purchases: 'purchases', reviews: 'reviews' };
+const OWNED = new Set(['clients', 'reminders']); // filas que pertenecen a cada vendedor
+
+export async function listRows(kind, { all = false } = {}) {
+  if (isDemo) {
+    const me = demoUser();
+    const rows = read(kind);
+    if (OWNED.has(kind) && !(all && me?.role === 'owner')) return rows.filter(r => r.employee_id === me?.id);
+    return rows;
+  }
+  let q = supabase.from(TABLES[kind]).select('*');
+  if (OWNED.has(kind) && !all) {
+    const { data } = await supabase.auth.getUser();
+    q = q.eq('employee_id', data.user?.id);
+  }
+  const { data, error } = await q.order('created_at', { ascending: false }).limit(3000);
+  if (error) throw error;
+  return data;
+}
+
+export async function saveRow(kind, row) {
+  const body = Object.fromEntries(Object.entries(row).filter(([k, v]) => k !== 'id' && v !== undefined).map(([k, v]) => [k, v === '' ? null : v]));
+  if (isDemo) {
+    const rows = read(kind);
+    if (row.id) {
+      write(kind, rows.map(r => (r.id === row.id ? { ...r, ...body } : r)));
+      return { ...row, ...body };
+    }
+    const created = { id: uid(), created_at: new Date().toISOString(), ...(OWNED.has(kind) ? { employee_id: demoUser()?.id } : {}), ...body };
+    write(kind, [created, ...rows]);
+    return created;
+  }
+  const q = row.id ? supabase.from(TABLES[kind]).update(body).eq('id', row.id) : supabase.from(TABLES[kind]).insert(body);
+  const { data, error } = await q.select().single();
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event('mg:data'));
+  return data;
+}
+
+export async function deleteRow(kind, row) {
+  if (isDemo) {
+    write(kind, read(kind).filter(r => r.id !== row.id));
+    return;
+  }
+  const { error } = await supabase.from(TABLES[kind]).delete().eq('id', row.id);
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event('mg:data'));
+}
+
+/* ═════════════ Acceso con cuadraditos + clave de 4 números ═════════════ */
+export async function listStaff() {
+  if (isDemo) return read('profiles').filter(p => p.active).sort((a, b) => a.sort - b.sort);
+  const { data, error } = await supabase.from('staff_directory').select('*').order('sort');
+  if (error) throw error;
+  return data;
+}
+
 // Devuelve el perfil del usuario logueado (con rol) o null.
 export async function getMe() {
   if (isDemo) return demoUser();
@@ -272,23 +347,14 @@ export async function getMe() {
   return profile ?? { id: user.id, email: user.email, name: user.email, role: 'employee', active: false };
 }
 
-// En modo demo "who" es el id del perfil; con Supabase es el email.
-export async function signIn(who, password) {
+export async function signInPin(slug, pin) {
   if (isDemo) {
-    const profile = read('profiles').find(p => p.id === who);
-    if (!profile) throw new Error('Elegí un usuario');
-    if (password !== DEMO_PASSWORDS[profile.role]) throw new Error('Contraseña incorrecta');
-    sessionStorage.setItem(K.session, profile.id);
+    if (read('pins')[slug] !== pin) throw new Error('Clave incorrecta');
+    sessionStorage.setItem(K.session, read('profiles').find(p => p.slug === slug)?.id);
     return;
   }
-  const { error } = await supabase.auth.signInWithPassword({ email: who, password });
-  if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos' : error.message);
-}
-
-export async function signUp(name, email, password) {
-  const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: window.location.href.split('#')[0] } });
-  if (error) throw new Error(error.message);
-  return data;
+  const { error } = await supabase.auth.signInWithPassword({ email: `${slug}@${STAFF_DOMAIN}`, password: pinPassword(pin) });
+  if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Clave incorrecta' : error.message);
 }
 
 export async function signOut() {
@@ -296,11 +362,32 @@ export async function signOut() {
   await supabase.auth.signOut();
 }
 
-export function demoProfiles() {
-  return read('profiles');
+export async function setPin(slug, pin) {
+  if (!/^\d{4}$/.test(pin)) throw new Error('La clave tiene que ser de 4 números');
+  if (isDemo) {
+    write('pins', { ...read('pins'), [slug]: pin });
+    return;
+  }
+  const { error } = await supabase.rpc('owner_set_pin', { p_slug: slug, p_pin: pin });
+  if (error) throw new Error(error.message);
+}
+
+export async function upsertStaff({ slug, name, role, pin, sort = 10 }) {
+  if (!/^\d{4}$/.test(pin)) throw new Error('La clave tiene que ser de 4 números');
+  slug = slug.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+  if (isDemo) {
+    const profiles = read('profiles');
+    const exists = profiles.find(p => p.slug === slug);
+    write('profiles', exists ? profiles.map(p => (p.slug === slug ? { ...p, name, role, active: true } : p)) : [...profiles, { id: slug, slug, name, role, active: true, sort }]);
+    write('pins', { ...read('pins'), [slug]: pin });
+    return;
+  }
+  const { error } = await supabase.rpc('owner_upsert_staff', { p_slug: slug, p_name: name, p_role: role, p_pin: pin, p_sort: sort });
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event('mg:data'));
 }
 
 export function resetDemo() {
-  for (const k of ['products', 'prices', 'sales', 'profiles']) localStorage.removeItem(K[k]);
+  for (const k of Object.keys(DEFAULTS)) localStorage.removeItem(K[k]);
   notify();
 }

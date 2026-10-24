@@ -1,163 +1,56 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, Boxes, Clock, Eye, Loader2, LogOut, Plus, Receipt, RotateCcw, Users } from 'lucide-react';
-import { Logo } from '@/components/Navbar';
-import { Segmented } from '@/components/ui';
+import { BarChart3, Boxes, CalendarDays, ClipboardList, Crown, Eye, Home, Loader2, LogOut, Megaphone, PiggyBank, Plus, Receipt, RotateCcw, Star, User, Users } from 'lucide-react';
+import { Logo } from '@/components/Header';
 import { isDemo, supabase } from '@/lib/supabase';
-import { demoProfiles, getMe, resetDemo, signIn, signOut, signUp } from '@/lib/store';
+import { getMe, resetDemo, signOut } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useAdminData } from './useAdminData';
 import { Avatar } from './kit';
-import Dashboard from './Dashboard';
+import Login from './Login';
+import SellerHome from './SellerHome';
+import Clients from './Clients';
+import Calendar, { ReminderSheet } from './Calendar';
 import Sales from './Sales';
-import Inventory from './Inventory';
+import Dashboard from './Dashboard';
+import Ads from './Ads';
+import Purchases from './Purchases';
 import Team from './Team';
+import Inventory from './Inventory';
+import Import from './Import';
+import ReviewsAdmin from './ReviewsAdmin';
 import SaleSheet from './SaleSheet';
+import { ClientSheet } from './ClientSheet';
 
-/* ─────────────── Acceso ─────────────── */
-function Login({ onDone }) {
-  const [mode, setMode] = useState('login');
-  const [who, setWho] = useState(isDemo ? 'owner' : '');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
-  const [busy, setBusy] = useState(false);
-  const people = isDemo ? demoProfiles().filter(p => p.active) : [];
-
-  const submit = async e => {
-    e.preventDefault();
-    setBusy(true);
-    setError('');
-    try {
-      if (mode === 'signup') {
-        const res = await signUp(name, who, password);
-        if (!res.session) {
-          setInfo('Te enviamos un email para confirmar la cuenta. Después avisale al dueño para que te active.');
-          return;
-        }
-      } else {
-        await signIn(who, password);
-      }
-      onDone();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <main className="grid min-h-dvh place-items-center px-4 py-10">
-      <form onSubmit={submit} className="neu w-full max-w-sm p-7">
-        <Logo />
-        <h1 className="mt-7 text-2xl font-bold">Sistema de gestión</h1>
-        <p className="mt-1 text-sm text-muted">Publicaciones, stock, ventas y comisiones en un solo lugar.</p>
-
-        {!isDemo && (
-          <Segmented
-            className="mt-6"
-            options={[{ value: 'login', label: 'Entrar' }, { value: 'signup', label: 'Soy nuevo' }]}
-            value={mode}
-            onChange={m => {
-              setMode(m);
-              setError('');
-            }}
-          />
-        )}
-
-        <div className="mt-6 space-y-4">
-          {isDemo ? (
-            <div>
-              <span className="label">¿Quién sos?</span>
-              <div className="grid grid-cols-3 gap-2.5">
-                {people.map(p => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setWho(p.id)}
-                    aria-pressed={who === p.id}
-                    className={cn('flex flex-col items-center gap-2 rounded-2xl p-3 transition', who === p.id ? 'shadow-[var(--neu-in)] ring-1 ring-ios-blue/60' : 'neu-sm')}
-                  >
-                    <Avatar name={p.name} owner={p.role === 'owner'} />
-                    <span className="text-xs font-semibold">{p.name}</span>
-                  </button>
-                ))}
-              </div>
-              <p className="mt-3 rounded-2xl bg-ios-orange/10 p-3 text-xs leading-relaxed text-ios-orange">
-                Modo demo · contraseña del dueño: <b>admin</b> · empleados: <b>1234</b>
-              </p>
-            </div>
-          ) : (
-            <>
-              {mode === 'signup' && (
-                <div>
-                  <label className="label" htmlFor="name">Tu nombre</label>
-                  <input id="name" className="field" value={name} onChange={e => setName(e.target.value)} required autoComplete="name" />
-                </div>
-              )}
-              <div>
-                <label className="label" htmlFor="email">Email</label>
-                <input id="email" type="email" className="field" value={who} onChange={e => setWho(e.target.value)} required autoComplete="email" />
-              </div>
-            </>
-          )}
-          <div>
-            <label className="label" htmlFor="pass">Contraseña</label>
-            <input
-              id="pass"
-              type="password"
-              className="field"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={mode === 'signup' ? 6 : undefined}
-              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-            />
-          </div>
-          {error && <p className="text-sm text-ios-red">{error}</p>}
-          {info && <p className="text-sm text-ios-green">{info}</p>}
-          <button className="btn btn-primary w-full" disabled={busy}>
-            {busy && <Loader2 size={18} className="animate-spin" />} {mode === 'signup' ? 'Crear cuenta' : 'Entrar'}
-          </button>
-          <Link to="/" className="btn btn-ghost w-full">Volver a la tienda</Link>
-        </div>
-      </form>
-    </main>
-  );
-}
-
-function Pending({ me, onLogout }) {
-  return (
-    <main className="grid min-h-dvh place-items-center px-4">
-      <div className="neu w-full max-w-sm p-7 text-center">
-        <div className="neu-inset mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl text-ios-orange">
-          <Clock size={28} />
-        </div>
-        <h1 className="text-xl font-bold">Cuenta pendiente</h1>
-        <p className="mt-2 text-sm text-muted">
-          Hola {me.name}. Tu cuenta ya está creada; falta que el dueño la active desde <b>Equipo</b>. Cuando lo haga, recargá esta página.
-        </p>
-        <button className="btn btn-neu mt-6 w-full" onClick={onLogout}>
-          <LogOut size={16} /> Salir
-        </button>
-      </div>
-    </main>
-  );
-}
-
-/* ─────────────── Layout ─────────────── */
-const NAV = [
-  { to: '/admin', end: true, label: 'Resumen', icon: BarChart3, roles: ['owner', 'employee'] },
-  { to: '/admin/ventas', label: 'Ventas', icon: Receipt, roles: ['owner', 'employee'] },
-  { to: '/admin/inventario', label: 'Inventario', icon: Boxes, roles: ['owner', 'employee'] },
-  { to: '/admin/equipo', label: 'Equipo', icon: Users, roles: ['owner'] }
-];
+const NAVS = {
+  seller: [
+    { to: '/admin', end: true, label: 'Inicio', icon: Home },
+    { to: '/admin/clientes', label: 'Clientes', icon: Users },
+    { to: '/admin/calendario', label: 'Calendario', icon: CalendarDays },
+    { to: '/admin/ventas', label: 'Ventas', icon: Receipt }
+  ],
+  owner: [
+    { to: '/admin', end: true, label: 'Panel', icon: BarChart3 },
+    { to: '/admin/ventas', label: 'Ventas', icon: Receipt },
+    { to: '/admin/publicidad', label: 'Publicidad', icon: Megaphone },
+    { to: '/admin/inversion', label: 'Inversión', icon: PiggyBank },
+    { to: '/admin/equipo', label: 'Equipo', icon: User }
+  ],
+  inventory: [
+    { to: '/admin', end: true, label: 'Inventario', icon: Boxes },
+    { to: '/admin/cargar', label: 'Cargar lista', icon: ClipboardList },
+    { to: '/admin/resenas', label: 'Reseñas', icon: Star }
+  ]
+};
+const MODE_KEY = 'mg_owner_mode';
 
 export default function AdminApp({ products, reload: reloadProducts }) {
   const [me, setMe] = useState(undefined);
-  const [saleOpen, setSaleOpen] = useState(false);
+  const [ownerMode, setOwnerModeState] = useState(() => localStorage.getItem(MODE_KEY) === '1');
+  const [sale, setSale] = useState(null);
+  const [reminder, setReminder] = useState(null);
+  const [client, setClient] = useState(null);
   const [toast, setToast] = useState('');
   const navigate = useNavigate();
 
@@ -183,17 +76,41 @@ export default function AdminApp({ products, reload: reloadProducts }) {
         <Loader2 className="animate-spin text-muted" />
       </div>
     );
-  if (!me) return <Login onDone={refreshMe} />;
+  if (!me || !me.active) return <Login onDone={refreshMe} />;
+
+  const isOwner = me.role === 'owner';
+  const isInventory = me.role === 'inventory';
+  const mode = isInventory ? 'inventory' : isOwner && ownerMode ? 'owner' : 'seller';
+  const nav = NAVS[mode];
+  const setOwnerMode = on => {
+    localStorage.setItem(MODE_KEY, on ? '1' : '0');
+    setOwnerModeState(on);
+    navigate('/admin');
+    window.scrollTo(0, 0);
+  };
   const logout = async () => {
     await signOut();
+    localStorage.setItem(MODE_KEY, '0');
+    setOwnerModeState(false);
     await refreshMe();
     navigate('/admin');
   };
-  if (!me.active) return <Pending me={me} onLogout={logout} />;
 
-  const isOwner = me.role === 'owner';
-  const nav = NAV.filter(n => n.roles.includes(me.role));
-  const ctx = { me, isOwner, products, reloadProducts, ...data, notify: setToast, openSale: () => setSaleOpen(true) };
+  const ctx = {
+    me,
+    isOwner,
+    ownerMode: mode === 'owner',
+    products,
+    reloadProducts,
+    ...data,
+    notify: setToast,
+    openSale: (initial = {}) => setSale(initial),
+    openReminder: (initial = {}) => setReminder(initial),
+    openClient: (initial = {}) => setClient(initial),
+    setOwnerMode
+  };
+
+  const home = mode === 'owner' ? <Dashboard {...ctx} /> : mode === 'inventory' ? <Inventory {...ctx} isOwner /> : <SellerHome {...ctx} />;
 
   return (
     <div className="min-h-dvh lg:grid lg:grid-cols-[250px_1fr]">
@@ -201,27 +118,40 @@ export default function AdminApp({ products, reload: reloadProducts }) {
       <aside className="sticky top-0 hidden h-dvh flex-col p-4 lg:flex">
         <div className="neu flex h-full flex-col p-4">
           <Logo className="px-1" />
-          <nav className="mt-8 space-y-1.5">
+          {mode === 'owner' && (
+            <span className="chip mt-5 self-start bg-ios-orange/15 text-ios-orange">
+              <Crown size={12} /> Modo dueño
+            </span>
+          )}
+          <nav className="mt-6 space-y-1.5">
             {nav.map(n => (
               <NavLink
                 key={n.to}
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  cn(
-                    'flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition',
-                    isActive ? 'text-ink shadow-[var(--neu-in)] [&>svg]:text-ios-blue' : 'text-muted hover:text-ink'
-                  )
+                  cn('flex items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition', isActive ? 'text-ink shadow-[var(--neu-in)] [&>svg]:text-violet-400' : 'text-muted hover:text-ink')
                 }
               >
                 <n.icon size={19} /> {n.label}
               </NavLink>
             ))}
           </nav>
-          <button type="button" onClick={() => setSaleOpen(true)} className="btn btn-primary mt-6 w-full">
-            <Plus size={19} /> Registrar venta
-          </button>
+          {mode === 'seller' && (
+            <button type="button" onClick={() => setSale({})} className="btn mt-6 w-full bg-gradient-to-br from-[#8b5cf6] to-[#4f46e5] text-white shadow-[0_12px_28px_-12px_rgba(124,58,237,.9)]">
+              <Plus size={19} /> Nueva venta
+            </button>
+          )}
           <div className="mt-auto space-y-3">
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setOwnerMode(!ownerMode)}
+                className={cn('flex w-full items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-sm font-semibold transition', ownerMode ? 'border-white/10 text-muted hover:text-ink' : 'border-ios-orange/40 bg-ios-orange/10 text-ios-orange')}
+              >
+                {ownerMode ? <User size={17} /> : <Crown size={17} />} {ownerMode ? 'Volver a modo vendedor' : 'Modo dueño'}
+              </button>
+            )}
             <Link to="/" className="flex items-center gap-2 px-2 text-sm text-muted hover:text-ink">
               <Eye size={16} /> Ver tienda
             </Link>
@@ -229,7 +159,7 @@ export default function AdminApp({ products, reload: reloadProducts }) {
               <Avatar name={me.name} owner={isOwner} />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-semibold">{me.name}</div>
-                <div className="text-xs text-muted">{isOwner ? 'Dueño' : 'Empleado'}</div>
+                <div className="text-xs text-muted">{isOwner ? 'Dueño' : isInventory ? 'Inventario' : 'Vendedor'}</div>
               </div>
               <button type="button" onClick={logout} className="icon-btn !h-9 !w-9 text-muted hover:text-ios-red" aria-label="Salir">
                 <LogOut size={17} />
@@ -242,21 +172,40 @@ export default function AdminApp({ products, reload: reloadProducts }) {
       <div className="min-w-0 pb-28 lg:pb-10">
         {/* encabezado (celular) */}
         <header className="glass sticky top-0 z-30 flex items-center justify-between border-x-0 border-t-0 px-4 py-3 lg:hidden">
-          <Logo />
+          <div className="flex items-center gap-2.5">
+            <Avatar name={me.name} owner={isOwner} size={34} />
+            <div className="leading-tight">
+              <div className="text-sm font-bold">{me.name}</div>
+              <div className="text-[11px] text-muted">{mode === 'owner' ? 'Modo dueño' : isInventory ? 'Inventario' : 'Vendedor'}</div>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            <Link to="/" className="icon-btn btn-neu !h-10 !w-10" aria-label="Ver tienda"><Eye size={17} /></Link>
-            <button type="button" onClick={logout} className="icon-btn btn-neu !h-10 !w-10" aria-label="Salir"><LogOut size={17} /></button>
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setOwnerMode(!ownerMode)}
+                className={cn('icon-btn !h-10 !w-10', ownerMode ? 'bg-ios-orange/20 text-ios-orange' : 'btn-neu')}
+                aria-label={ownerMode ? 'Volver a modo vendedor' : 'Modo dueño'}
+                title={ownerMode ? 'Volver a modo vendedor' : 'Modo dueño'}
+              >
+                <Crown size={17} />
+              </button>
+            )}
+            <Link to="/" className="icon-btn btn-neu !h-10 !w-10" aria-label="Ver tienda">
+              <Eye size={17} />
+            </Link>
+            <button type="button" onClick={logout} className="icon-btn btn-neu !h-10 !w-10" aria-label="Salir">
+              <LogOut size={17} />
+            </button>
           </div>
         </header>
 
         {isDemo && (
           <div className="mx-4 mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-ios-orange/10 px-4 py-2.5 text-xs text-ios-orange lg:mx-6">
-            <span><b>Modo demo:</b> los datos son de ejemplo y quedan solo en este navegador.</span>
-            <button
-              type="button"
-              onClick={() => confirm('¿Volver a los datos de ejemplo? Se borra lo que cargaste.') && resetDemo()}
-              className="flex items-center gap-1 font-semibold"
-            >
+            <span>
+              <b>Modo demo:</b> datos de ejemplo guardados solo en este navegador.
+            </span>
+            <button type="button" onClick={() => confirm('¿Volver a los datos de ejemplo?') && resetDemo()} className="flex items-center gap-1 font-semibold">
               <RotateCcw size={13} /> Reiniciar demo
             </button>
           </div>
@@ -265,30 +214,56 @@ export default function AdminApp({ products, reload: reloadProducts }) {
 
         <div className="px-4 pt-5 lg:px-6 lg:pt-6">
           <Routes>
-            <Route index element={<Dashboard {...ctx} />} />
-            <Route path="ventas" element={<Sales {...ctx} />} />
-            <Route path="inventario" element={<Inventory {...ctx} />} />
-            {isOwner && <Route path="equipo" element={<Team {...ctx} />} />}
-            <Route path="*" element={<Dashboard {...ctx} />} />
+            <Route index element={home} />
+            {mode === 'seller' && (
+              <>
+                <Route path="clientes" element={<Clients {...ctx} />} />
+                <Route path="calendario" element={<Calendar {...ctx} />} />
+                <Route path="ventas" element={<Sales {...ctx} />} />
+              </>
+            )}
+            {mode === 'owner' && (
+              <>
+                <Route path="ventas" element={<Sales {...ctx} />} />
+                <Route path="publicidad" element={<Ads {...ctx} />} />
+                <Route path="inversion" element={<Purchases {...ctx} />} />
+                <Route path="equipo" element={<Team {...ctx} />} />
+              </>
+            )}
+            {mode === 'inventory' && (
+              <>
+                <Route path="cargar" element={<Import {...ctx} />} />
+                <Route path="resenas" element={<ReviewsAdmin {...ctx} />} />
+              </>
+            )}
+            <Route path="*" element={home} />
           </Routes>
         </div>
       </div>
 
       {/* barra de pestañas estilo iOS (celular) */}
       <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-end justify-around border-x-0 border-b-0 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] lg:hidden">
-        {nav.slice(0, 2).map(n => <TabLink key={n.to} n={n} />)}
-        <button
-          type="button"
-          onClick={() => setSaleOpen(true)}
-          className="-mt-7 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-b from-[#2a95ff] to-[#0a7bf0] text-white shadow-[0_12px_28px_-8px_rgba(10,132,255,0.9),inset_0_1px_0_rgba(255,255,255,0.3)] ring-[6px] ring-[#0e1016] active:scale-95"
-          aria-label="Registrar venta"
-        >
-          <Plus size={28} strokeWidth={2.4} />
-        </button>
-        {nav.slice(2).map(n => <TabLink key={n.to} n={n} />)}
+        {mode === 'seller' ? (
+          <>
+            {nav.slice(0, 2).map(n => <TabLink key={n.to} n={n} />)}
+            <button
+              type="button"
+              onClick={() => setSale({})}
+              className="-mt-7 grid h-16 w-16 place-items-center rounded-full bg-gradient-to-b from-[#8b5cf6] to-[#4f46e5] text-white shadow-[0_12px_28px_-8px_rgba(124,58,237,0.9),inset_0_1px_0_rgba(255,255,255,0.3)] ring-[6px] ring-[#0e1016] active:scale-95"
+              aria-label="Nueva venta"
+            >
+              <Plus size={28} strokeWidth={2.4} />
+            </button>
+            {nav.slice(2).map(n => <TabLink key={n.to} n={n} />)}
+          </>
+        ) : (
+          nav.map(n => <TabLink key={n.to} n={n} />)
+        )}
       </nav>
 
-      <SaleSheet open={saleOpen} onClose={() => setSaleOpen(false)} {...ctx} />
+      <SaleSheet open={!!sale} initial={sale} onClose={() => setSale(null)} {...ctx} />
+      <ReminderSheet open={!!reminder} initial={reminder} onClose={() => setReminder(null)} clients={data.clients.filter(c => c.employee_id === me.id)} notify={setToast} />
+      <ClientSheet open={!!client} initial={client} onClose={() => setClient(null)} notify={setToast} />
 
       <AnimatePresence>
         {toast && (
@@ -308,16 +283,9 @@ export default function AdminApp({ products, reload: reloadProducts }) {
 
 function TabLink({ n }) {
   return (
-    <NavLink
-      to={n.to}
-      end={n.end}
-      className={({ isActive }) =>
-        cn('flex min-w-[64px] flex-col items-center gap-1 py-1 text-[10px] font-semibold', isActive ? 'text-ios-blue' : 'text-faint')
-      }
-    >
-      <n.icon size={23} />
+    <NavLink to={n.to} end={n.end} className={({ isActive }) => cn('flex min-w-[58px] flex-col items-center gap-1 py-1 text-[10px] font-semibold', isActive ? 'text-violet-400' : 'text-faint')}>
+      <n.icon size={22} />
       {n.label}
     </NavLink>
   );
 }
-

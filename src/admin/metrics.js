@@ -80,3 +80,58 @@ export function timeAgo(iso) {
   if (diff < 60 * 24 && d.getDate() === new Date().getDate()) return `hoy ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
   return d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' }) + ` ${d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
 }
+
+/* ---------- rangos de fechas (dashboard del dueño) ---------- */
+export const toISODate = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+export const todayISO = () => toISODate(new Date());
+
+export const RANGE_PRESETS = [
+  { value: 'hoy', label: 'Hoy' },
+  { value: 'semana', label: 'Esta semana' },
+  { value: 'mes', label: 'Este mes' },
+  { value: 'mes-pasado', label: 'Mes pasado' },
+  { value: 'anio', label: 'Este año' }
+];
+
+export function presetRange(preset) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (preset === 'hoy') return [todayISO(), todayISO()];
+  if (preset === 'semana') {
+    const monday = new Date(y, m, now.getDate() - ((now.getDay() + 6) % 7));
+    return [toISODate(monday), todayISO()];
+  }
+  if (preset === 'mes-pasado') return [toISODate(new Date(y, m - 1, 1)), toISODate(new Date(y, m, 0))];
+  if (preset === 'anio') return [toISODate(new Date(y, 0, 1)), todayISO()];
+  return [toISODate(new Date(y, m, 1)), todayISO()];
+}
+
+// Filtra filas entre dos fechas (inclusive). Usa "date" si existe, si no "created_at".
+export function inRange(rows, from, to) {
+  return rows.filter(r => {
+    const d = r.date ?? toISODate(new Date(r.created_at));
+    return (!from || d >= from) && (!to || d <= to);
+  });
+}
+
+export function byMonth(sales, months = 6) {
+  const now = new Date();
+  const out = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    out.push({ key: `${d.getFullYear()}-${d.getMonth()}`, day: d.toLocaleDateString('es-AR', { month: 'short' }).replace('.', ''), total: 0, count: 0 });
+  }
+  const map = Object.fromEntries(out.map(o => [o.key, o]));
+  for (const s of sales) {
+    const d = new Date(s.created_at);
+    const o = map[`${d.getFullYear()}-${d.getMonth()}`];
+    if (o) {
+      o.total += saleTotal(s);
+      o.count += s.qty;
+    }
+  }
+  return out;
+}
+
+export const sumBy = (rows, f) => rows.reduce((n, r) => n + (Number(f(r)) || 0), 0);
