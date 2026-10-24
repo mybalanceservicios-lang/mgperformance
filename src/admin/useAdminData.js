@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { listOwnerPrices, listProfiles, listRows, listSales } from '@/lib/store';
 import { friendlyError } from '@/lib/supabase';
 
-const EMPTY = { sales: [], prices: {}, profiles: [], clients: [], reminders: [], ads: [], purchases: [], reviews: [] };
+const EMPTY = { sales: [], prices: {}, profiles: [], clients: [], reminders: [], ads: [], purchases: [], reviews: [], leads: [], tradein: [] };
 
 // Carga lo que cada rol necesita. Las reglas de la base igual impiden ver lo ajeno.
 export function useAdminData(me) {
@@ -20,7 +20,7 @@ export function useAdminData(me) {
       return null;
     });
     try {
-      const [sales, prices, profiles, clients, reminders, ads, purchases, reviews] = await Promise.all([
+      const [sales, prices, profiles, clients, reminders, ads, purchases, reviews, leads, tradein] = await Promise.all([
         inventory ? [] : safe(listSales()),
         safe(listOwnerPrices()),
         owner ? safe(listProfiles()) : [me],
@@ -28,7 +28,9 @@ export function useAdminData(me) {
         inventory ? [] : safe(listRows('reminders', { all: owner })),
         owner ? safe(listRows('ads')) : [],
         owner ? safe(listRows('purchases')) : [],
-        owner || inventory ? safe(listRows('reviews')) : []
+        owner || inventory ? safe(listRows('reviews')) : [],
+        owner ? safe(listRows('leads')) : [],
+        owner ? safe(listRows('tradein')) : []
       ]);
       setData({
         sales: sales ?? [],
@@ -38,7 +40,9 @@ export function useAdminData(me) {
         reminders: reminders ?? [],
         ads: ads ?? [],
         purchases: purchases ?? [],
-        reviews: reviews ?? []
+        reviews: reviews ?? [],
+        leads: leads ?? [],
+        tradein: tradein ?? []
       });
     } finally {
       setLoading(false);

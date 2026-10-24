@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { SearchX, SlidersHorizontal, X } from 'lucide-react';
 import ListingCard from './ListingCard';
 import { Sheet } from './ui';
+import NotifyMe from './NotifyMe';
 import { CONDITIONS, STORAGE_OPTIONS } from '@/config';
 import { formatPrice, getCondition } from '@/lib/utils';
 
@@ -248,6 +249,7 @@ export default function Listing({ products, loading }) {
               </div>
             </>
           )}
+          <NotifyMe key={f.q || f.modelo} defaultModel={f.q || f.modelo || ''} className="mt-6" />
         </div>
       </div>
 

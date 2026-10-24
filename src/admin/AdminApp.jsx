@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'motion/react';
-import { BarChart3, Boxes, CalendarDays, ClipboardList, Crown, Eye, Home, Loader2, LogOut, Megaphone, PiggyBank, Plus, Receipt, RotateCcw, Star, User, Users } from 'lucide-react';
+import { BarChart3, BellRing, Boxes, Calculator, MoreHorizontal, CalendarDays, ClipboardList, Crown, Eye, Home, Loader2, LogOut, Megaphone, PiggyBank, Plus, Receipt, RotateCcw, Star, User, Users } from 'lucide-react';
 import { Logo } from '@/components/Header';
 import { isDemo, supabase } from '@/lib/supabase';
 import { getMe, resetDemo, signOut } from '@/lib/store';
@@ -21,6 +21,9 @@ import Team from './Team';
 import Inventory from './Inventory';
 import Import from './Import';
 import ReviewsAdmin from './ReviewsAdmin';
+import Leads from './Leads';
+import TradeInAdmin from './TradeInAdmin';
+import { Sheet } from '@/components/ui';
 import SaleSheet from './SaleSheet';
 import { ClientSheet } from './ClientSheet';
 
@@ -33,9 +36,11 @@ const NAVS = {
   ],
   owner: [
     { to: '/admin', end: true, label: 'Panel', icon: BarChart3 },
+    { to: '/admin/interesados', label: 'Interesados', icon: BellRing, badge: 'leads' },
     { to: '/admin/ventas', label: 'Ventas', icon: Receipt },
     { to: '/admin/publicidad', label: 'Publicidad', icon: Megaphone },
     { to: '/admin/inversion', label: 'Inversión', icon: PiggyBank },
+    { to: '/admin/cotizador', label: 'Cotizador', icon: Calculator },
     { to: '/admin/equipo', label: 'Equipo', icon: User }
   ],
   inventory: [
@@ -52,6 +57,7 @@ export default function AdminApp({ products, reload: reloadProducts }) {
   const [sale, setSale] = useState(null);
   const [reminder, setReminder] = useState(null);
   const [client, setClient] = useState(null);
+  const [more, setMore] = useState(false);
   const [toast, setToast] = useState('');
   const navigate = useNavigate();
 
@@ -83,6 +89,7 @@ export default function AdminApp({ products, reload: reloadProducts }) {
   const isInventory = me.role === 'inventory';
   const mode = isInventory ? 'inventory' : isOwner && ownerMode ? 'owner' : 'seller';
   const nav = NAVS[mode];
+  const newLeads = data.leads.filter(l => l.status === 'nuevo').length;
   const setOwnerMode = on => {
     localStorage.setItem(MODE_KEY, on ? '1' : '0');
     setOwnerModeState(on);
@@ -135,6 +142,7 @@ export default function AdminApp({ products, reload: reloadProducts }) {
                 }
               >
                 <n.icon size={19} /> {n.label}
+                {n.badge === 'leads' && newLeads > 0 && <span className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-ios-red px-1.5 text-[11px] font-bold text-white">{newLeads}</span>}
               </NavLink>
             ))}
           </nav>
@@ -228,6 +236,8 @@ export default function AdminApp({ products, reload: reloadProducts }) {
             )}
             {mode === 'owner' && (
               <>
+                <Route path="interesados" element={<Leads {...ctx} />} />
+                <Route path="cotizador" element={<TradeInAdmin {...ctx} />} />
                 <Route path="ventas" element={<Sales {...ctx} />} />
                 <Route path="publicidad" element={<Ads {...ctx} />} />
                 <Route path="inversion" element={<Purchases {...ctx} />} />
@@ -260,10 +270,27 @@ export default function AdminApp({ products, reload: reloadProducts }) {
             </button>
             {nav.slice(2).map(n => <TabLink key={n.to} n={n} />)}
           </>
+        ) : nav.length > 5 ? (
+          <>
+            {nav.slice(0, 4).map(n => <TabLink key={n.to} n={n} badge={n.badge === 'leads' ? newLeads : 0} />)}
+            <button type="button" onClick={() => setMore(true)} className="flex min-w-[58px] flex-col items-center gap-1 py-1 text-[10px] font-semibold text-faint">
+              <MoreHorizontal size={22} />
+              Más
+            </button>
+          </>
         ) : (
           nav.map(n => <TabLink key={n.to} n={n} />)
         )}
       </nav>
+      <Sheet open={more} onClose={() => setMore(false)} title="Más">
+        <div className="grid grid-cols-3 gap-3">
+          {nav.slice(4).map(n => (
+            <NavLink key={n.to} to={n.to} onClick={() => setMore(false)} className="neu flex flex-col items-center gap-2 p-4 text-sm font-semibold">
+              <n.icon size={22} className="text-violet-400" /> {n.label}
+            </NavLink>
+          ))}
+        </div>
+      </Sheet>
 
       <SaleSheet open={!!sale} initial={sale} onClose={() => setSale(null)} {...ctx} />
       <ReminderSheet open={!!reminder} initial={reminder} onClose={() => setReminder(null)} clients={data.clients.filter(c => c.employee_id === me.id)} notify={setToast} />
@@ -285,9 +312,10 @@ export default function AdminApp({ products, reload: reloadProducts }) {
   );
 }
 
-function TabLink({ n }) {
+function TabLink({ n, badge = 0 }) {
   return (
-    <NavLink to={n.to} end={n.end} className={({ isActive }) => cn('flex min-w-[58px] flex-col items-center gap-1 py-1 text-[10px] font-semibold', isActive ? 'text-violet-400' : 'text-faint')}>
+    <NavLink to={n.to} end={n.end} className={({ isActive }) => cn('relative flex min-w-[58px] flex-col items-center gap-1 py-1 text-[10px] font-semibold', isActive ? 'text-violet-400' : 'text-faint')}>
+      {badge > 0 && <span className="absolute top-0 right-2 grid h-4 min-w-4 place-items-center rounded-full bg-ios-red px-1 text-[10px] font-bold text-white">{badge}</span>}
       <n.icon size={22} />
       {n.label}
     </NavLink>

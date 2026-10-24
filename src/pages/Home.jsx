@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowDown, BadgeCheck, Camera, RefreshCcw, ShieldCheck } from 'lucide-react';
 import Aurora from '@/components/reactbits/Aurora';
@@ -8,7 +8,6 @@ import { ShimmeringText } from '@/components/elevenlabs/shimmering-text';
 import Listing from '@/components/Listing';
 import Reviews from '@/components/Reviews';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
-import { TRADE_IN_MESSAGE } from '@/config';
 import { waLink } from '@/lib/utils';
 
 // three.js pesa: se carga aparte para que la página abra rápido
@@ -48,9 +47,9 @@ function Hero() {
             transition={{ delay: 0.65, duration: 0.6 }}
             className="mt-8 flex flex-wrap gap-3"
           >
-            <a href={waLink(TRADE_IN_MESSAGE)} target="_blank" rel="noreferrer" className="btn btn-ml !min-h-[52px] !rounded-full !px-6 text-base">
-              <WhatsAppIcon className="h-5 w-5" /> Cotizá tu usado
-            </a>
+            <Link to="/cotizar" className="btn btn-ml !min-h-[52px] !rounded-full !px-6 text-base">
+              <RefreshCcw size={18} /> Cotizá tu usado
+            </Link>
             <button
               type="button"
               onClick={() => document.getElementById('publicaciones')?.scrollIntoView({ behavior: 'smooth' })}

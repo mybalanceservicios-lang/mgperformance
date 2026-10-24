@@ -7,7 +7,7 @@ import Diagnostic from '@/components/Diagnostic';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { batteryColor, BatteryIcon, MediaView, PhoneMock } from '@/components/ui';
 import { phoneColor } from '@/components/Phone3D';
-import { STORE, TRADE_IN_MESSAGE } from '@/config';
+import { STORE } from '@/config';
 import { cn, formatPrice, getCondition, productUrl, waLink } from '@/lib/utils';
 import { family } from '@/components/Listing';
 import Pesos from '@/components/Pesos';
@@ -125,7 +125,6 @@ export default function Product({ products, loading }) {
   const discount = off(product);
   const pesos = toPesos(product.price, rate);
   const consult = `Hola ${STORE.name}! Me interesa este equipo:\n\n${cardTitle(product)} · ${cond.label}${product.battery != null ? ` · Batería ${product.battery}%` : ''} — ${formatPrice(product.price)}${pesos ? ` (${formatARS(pesos)})` : ''}\n${productUrl(product)}\n\n¿Sigue disponible?`;
-  const tradeIn = `${TRADE_IN_MESSAGE}\n\nMe interesa: ${cardTitle(product)} (${formatPrice(product.price)})`;
 
   const share = async () => {
     const url = productUrl(product);
@@ -223,9 +222,9 @@ export default function Product({ products, loading }) {
             <a href={waLink(consult)} target="_blank" rel="noreferrer" className="btn btn-ml w-full !min-h-[52px] text-base">
               <WhatsAppIcon className="h-5 w-5" /> Contactanos
             </a>
-            <a href={waLink(tradeIn)} target="_blank" rel="noreferrer" className="btn btn-ml-soft w-full !min-h-[48px]">
+            <Link to={`/cotizar?para=${product.id}`} className="btn btn-ml-soft w-full !min-h-[48px]">
               <RefreshCcw size={17} /> Cotizar mi usado para este equipo
-            </a>
+            </Link>
           </div>
           <p className="mt-3 text-center text-xs text-white/40">Te respondemos por WhatsApp</p>
         </aside>

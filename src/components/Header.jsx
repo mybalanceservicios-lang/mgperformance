@@ -66,14 +66,9 @@ export default function Header() {
           </button>
         </form>
         <DolarChip className="hidden shrink-0 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-white/75 xl:inline-flex" />
-        <a
-          href={waLink(TRADE_IN_MESSAGE)}
-          target="_blank"
-          rel="noreferrer"
-          className="hidden shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-white/5 md:flex"
-        >
-          <RefreshCcw size={16} /> Entregá tu usado
-        </a>
+        <Link to="/cotizar" className="hidden shrink-0 items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold text-violet-200 hover:bg-white/5 md:flex">
+          <RefreshCcw size={16} /> Cotizá tu usado
+        </Link>
         <a
           href={waLink(`Hola ${STORE.name}! Tengo una consulta.`)}
           target="_blank"

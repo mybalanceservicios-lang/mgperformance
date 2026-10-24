@@ -10,11 +10,14 @@ Web con estilo iOS + neumorfismo y animaciones de **React Bits** (Aurora, BlurTe
 - Publicación estilo Mercado Libre: fotos y videos a la izquierda; precio, batería y "Contactanos" (WhatsApp) a la derecha.
 - **Diagnóstico 3D**: un iPhone 3D del color del equipo que se gira con el dedo; los rayones son puntos naranjas que abren su video o foto.
 - Reseñas de clientes (se cargan desde el sistema).
+- **Cotizador de usados** (`/#/cotizar`): el cliente elige modelo, batería y estado y ve al instante cuánto se lo toman; lo manda por WhatsApp.
+- **Avisame cuando entre**: si no está el modelo, deja sus datos.
+- Precios en pesos con el dólar blue (compra) del día.
 
 **Sistema de gestión (`/#/admin`)** — estilo barbería
 - Pantalla "¿Quién está usando el sistema?" con un cuadradito por persona y **clave de 4 números**.
 - **Vendedores** (Alte, Tito, Tomás): inicio con su comisión, clientes (CRM con botón de WhatsApp), calendario del mes con recordatorios, y registro de ventas eligiendo entre los equipos publicados.
-- **Matías (dueño)**: lo mismo que un vendedor + **Modo dueño**: panel con filtro por fechas (ventas, cuánto le rinden, comisiones de los chicos y propias, publicidad, inversión, balance, ventas mensuales), ventas de todos, publicidad, inversión (equipos que entran) y equipo (claves).
+- **Matías (dueño)**: lo mismo que un vendedor + **Modo dueño** (con **Interesados**: cotizaciones y avisos de la web con botón de WhatsApp, y **Cotizador** para ajustar los valores): panel con filtro por fechas (ventas, cuánto le rinden, comisiones de los chicos y propias, publicidad, inversión, balance, ventas mensuales), ventas de todos, publicidad, inversión (equipos que entran) y equipo (claves).
 - **Inventario** (abajo a la derecha en la pantalla de ingreso): carga y edición de publicaciones con fotos, videos y diagnóstico 3D, "Cargar lista" para subir muchos equipos de una, y reseñas.
 - **Comisión = precio de venta − precio a rendir** (la lista de precios de Matías). El stock se descuenta solo con cada venta.
 
@@ -25,6 +28,7 @@ Correr en este orden (cada archivo se puede repetir sin romper nada):
 1. [`supabase/schema.sql`](supabase/schema.sql) — base inicial (si ya lo corriste, saltealo).
 2. [`supabase/actualizacion-1.sql`](supabase/actualizacion-1.sql) — diagnóstico 3D, reseñas y publicaciones de ejemplo.
 3. [`supabase/actualizacion-2.sql`](supabase/actualizacion-2.sql) — sistema estilo barbería: perfiles con clave, clientes, calendario, publicidad, inversión.
+4. [`supabase/actualizacion-3.sql`](supabase/actualizacion-3.sql) — cotizador de usados e Interesados (cotizaciones y "avisame cuando entre").
 
 ### Claves iniciales (cambialas desde Modo dueño → Equipo)
 | Perfil | Clave |

@@ -175,3 +175,13 @@ export const DEMO_REVIEWS = [
   { id: 'r2', created_at: new Date().toISOString(), name: 'Ejemplo · Cliente 2', rating: 5, text: 'Reseña de ejemplo: se reemplaza por los comentarios reales desde el sistema.', model: 'iPhone 14', photo_url: '', active: true },
   { id: 'r3', created_at: new Date().toISOString(), name: 'Ejemplo · Cliente 3', rating: 5, text: 'Reseña de ejemplo: también se puede subir la foto que el cliente compartió en Instagram.', model: 'iPhone 13 Pro Max', photo_url: '', active: true }
 ];
+
+const TI = [['iPhone 11','64GB',160],['iPhone 11','128GB',185],['iPhone 11 Pro','64GB',210],['iPhone 11 Pro Max','64GB',250],['iPhone 12','64GB',230],['iPhone 12','128GB',260],['iPhone 12 Pro','128GB',320],['iPhone 12 Pro Max','128GB',370],['iPhone 13','128GB',330],['iPhone 13 Pro','128GB',430],['iPhone 13 Pro Max','128GB',490],['iPhone 14','128GB',400],['iPhone 14 Pro','128GB',540],['iPhone 14 Pro Max','128GB',610],['iPhone 15','128GB',520],['iPhone 15 Pro','128GB',680],['iPhone 15 Pro Max','256GB',820],['iPhone 16','128GB',650],['iPhone 16 Pro','128GB',850],['iPhone 16 Pro Max','256GB',1020]];
+export const DEMO_TRADEIN = TI.map(([model, storage, value], i) => ({ id: `ti-${i}`, model, storage, value }));
+
+export const DEMO_LEADS = [
+  { id: 'lead-1', created_at: new Date(Date.now() - 3600000).toISOString(), kind: 'cotizacion', name: 'Romi', phone: '1155550001', model: 'iPhone 13', storage: '128GB', details: { battery: '85 a 89%', condition: 'Muy bueno', fault: false, para: 'iPhone 15 Pro Max 256 GB Titanio natural' }, estimate_min: 250, estimate_max: 285, status: 'nuevo', notes: null },
+  { id: 'lead-2', created_at: new Date(Date.now() - 86400000).toISOString(), kind: 'aviso', name: 'Gonza', phone: '1155550002', model: 'iPhone 15 Pro', storage: '256GB', details: { budget: '900' }, estimate_min: null, estimate_max: null, status: 'nuevo', notes: null },
+  { id: 'lead-3', created_at: new Date(Date.now() - 2 * 86400000).toISOString(), kind: 'aviso', name: 'Vale', phone: '1155550003', model: 'iPhone 14', storage: '', details: {}, estimate_min: null, estimate_max: null, status: 'contactado', notes: 'Le pasé opciones' },
+  { id: 'lead-4', created_at: new Date(Date.now() - 3 * 86400000).toISOString(), kind: 'cotizacion', name: 'Dani', phone: '1155550004', model: 'iPhone 12', storage: '64GB', details: { battery: '80 a 84%', condition: 'Con detalles', fault: false }, estimate_min: 150, estimate_max: 170, status: 'nuevo', notes: null }
+];

@@ -165,7 +165,7 @@ export function waPhone(phone) {
   return digits;
 }
 
-export function WhatsAppLink({ phone, text = '', className, children, size = 'md' }) {
+export function WhatsAppLink({ phone, text = '', className, children, size = 'md', onClick }) {
   const p = waPhone(phone);
   if (!p) return null;
   return (
@@ -173,7 +173,10 @@ export function WhatsAppLink({ phone, text = '', className, children, size = 'md
       href={`https://wa.me/${p}${text ? `?text=${encodeURIComponent(text)}` : ''}`}
       target="_blank"
       rel="noreferrer"
-      onClick={e => e.stopPropagation()}
+      onClick={e => {
+        e.stopPropagation();
+        onClick?.(e);
+      }}
       className={cn(
         'inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#22c55e] font-semibold text-[#04210f] transition active:scale-95',
         size === 'sm' ? 'h-9 w-9' : 'h-10 px-3 text-sm',

@@ -1,7 +1,7 @@
 // Capa de datos: usa Supabase si está configurado; si no, guarda todo en el navegador (modo demo).
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import { supabase, isDemo, BUCKET } from './supabase';
-import { DEMO_ADS, DEMO_CLIENTS, DEMO_PINS, DEMO_PRICES, DEMO_PRODUCTS, DEMO_PROFILES, DEMO_PURCHASES, DEMO_REMINDERS, DEMO_REVIEWS, DEMO_SALES } from './demoData';
+import { DEMO_ADS, DEMO_CLIENTS, DEMO_PINS, DEMO_PRICES, DEMO_PRODUCTS, DEMO_PROFILES, DEMO_PURCHASES, DEMO_REMINDERS, DEMO_REVIEWS, DEMO_SALES, DEMO_TRADEIN, DEMO_LEADS } from './demoData';
 import { uid } from './utils';
 
 const K = {
@@ -15,6 +15,8 @@ const K = {
   ads: 'mg_ads_v4',
   purchases: 'mg_purchases_v4',
   reviews: 'mg_reviews_v4',
+  tradein: 'mg_tradein_v1',
+  leads: 'mg_leads_v1',
   session: 'mg_demo_user'
 };
 const DEFAULTS = {
@@ -27,7 +29,9 @@ const DEFAULTS = {
   reminders: DEMO_REMINDERS,
   ads: DEMO_ADS,
   purchases: DEMO_PURCHASES,
-  reviews: DEMO_REVIEWS
+  reviews: DEMO_REVIEWS,
+  tradein: DEMO_TRADEIN,
+  leads: DEMO_LEADS
 };
 const STAFF_DOMAIN = 'staff.mgperformance.app';
 const pinPassword = pin => `mg-${pin}-pin`;
@@ -280,7 +284,7 @@ export async function resolveMediaUrl(url) {
 
 /* ═════════════ Tablas simples (clientes, calendario, publicidad, inversión, reseñas) ═════════════ */
 // Con Supabase, la seguridad (quién ve qué) la resuelven las reglas RLS de la base.
-const TABLES = { clients: 'clients', reminders: 'reminders', ads: 'ad_expenses', purchases: 'purchases', reviews: 'reviews' };
+const TABLES = { clients: 'clients', reminders: 'reminders', ads: 'ad_expenses', purchases: 'purchases', reviews: 'reviews', leads: 'leads', tradein: 'trade_in_prices' };
 const OWNED = new Set(['clients', 'reminders']); // filas que pertenecen a cada vendedor
 
 export async function listRows(kind, { all = false } = {}) {
@@ -295,7 +299,7 @@ export async function listRows(kind, { all = false } = {}) {
     const { data } = await supabase.auth.getUser();
     q = q.eq('employee_id', data.user?.id);
   }
-  const { data, error } = await q.order('created_at', { ascending: false }).limit(3000);
+  const { data, error } = await (kind === 'tradein' ? q.order('model') : q.order('created_at', { ascending: false })).limit(3000);
   if (error) throw error;
   return data;
 }
@@ -327,6 +331,35 @@ export async function deleteRow(kind, row) {
   const { error } = await supabase.from(TABLES[kind]).delete().eq('id', row.id);
   if (error) throw new Error(error.message);
   window.dispatchEvent(new Event('mg:data'));
+}
+
+/* ═════════════ Interesados (los carga cualquier visitante desde la web) ═════════════ */
+export async function createLead(lead) {
+  const body = {
+    kind: lead.kind,
+    name: String(lead.name ?? '').trim().slice(0, 80),
+    phone: String(lead.phone ?? '').trim().slice(0, 30),
+    model: lead.model ? String(lead.model).slice(0, 80) : null,
+    storage: lead.storage ? String(lead.storage).slice(0, 20) : null,
+    details: lead.details ?? {},
+    estimate_min: lead.estimate_min ?? null,
+    estimate_max: lead.estimate_max ?? null
+  };
+  if (!body.name || body.phone.replace(/\D/g, '').length < 6) throw new Error('Completá tu nombre y WhatsApp');
+  if (isDemo) {
+    write('leads', [{ id: uid(), created_at: new Date().toISOString(), status: 'nuevo', notes: null, ...body }, ...read('leads')]);
+    return;
+  }
+  // sin .select(): el visitante puede cargar pero no leer interesados
+  const { error } = await supabase.from('leads').insert(body);
+  if (error) throw new Error(error.message);
+}
+
+export async function listTradeIn() {
+  if (isDemo) return read('tradein');
+  const { data, error } = await supabase.from('trade_in_prices').select('*').order('model');
+  if (error) return [];
+  return data;
 }
 
 /* ═════════════ Acceso con cuadraditos + clave de 4 números ═════════════ */

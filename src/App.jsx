@@ -7,6 +7,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Home from '@/pages/Home';
 import Product from '@/pages/Product';
+import TradeIn from '@/pages/TradeIn';
 import { useProducts } from '@/lib/useProducts';
 import { waLink } from '@/lib/utils';
 import { STORE } from '@/config';
@@ -50,6 +51,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home products={shop} loading={loading} />} />
         <Route path="/producto/:id" element={<Product products={shop} loading={loading} />} />
+        <Route path="/cotizar" element={<TradeIn products={shop} />} />
         <Route
           path="/admin/*"
           element={

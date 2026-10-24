@@ -82,3 +82,24 @@ export const CHECKS = [
 
 export const TRADE_IN_MESSAGE =
   'Hola! Quiero entregar mi celular en parte de pago.\nModelo:\nCapacidad:\nBatería (%):\nEstado:\n¿Cuánto me lo toman?';
+
+// ─────────────────────────────────────────────────────────────
+//  COTIZADOR DE USADOS
+//  Valor estimado = valor base del modelo (lo carga Matías) × estado × batería × falla
+// ─────────────────────────────────────────────────────────────
+export const TRADE_IN = {
+  conditions: [
+    { id: 'impecable', label: 'Impecable', hint: 'Sin marcas, como nuevo', factor: 1 },
+    { id: 'muy-bueno', label: 'Muy bueno', hint: 'Marcas mínimas de uso', factor: 0.9 },
+    { id: 'detalles', label: 'Con detalles', hint: 'Rayones o golpes visibles', factor: 0.78 },
+    { id: 'roto', label: 'Vidrio roto', hint: 'Pantalla o dorso astillado', factor: 0.55 }
+  ],
+  battery: [
+    { id: '90', label: '90% o más', factor: 1 },
+    { id: '85', label: '85 a 89%', factor: 0.95 },
+    { id: '80', label: '80 a 84%', factor: 0.9 },
+    { id: '0', label: 'Menos de 80%', factor: 0.8 }
+  ],
+  faultFactor: 0.7, // si Face ID, cámaras u otra cosa no funciona
+  spread: 0.06 // el rango que se muestra: ±6% del valor estimado
+};
