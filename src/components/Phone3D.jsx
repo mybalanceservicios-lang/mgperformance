@@ -5,6 +5,64 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Float, Lightformer, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
+/* ---------- Canvas seguro ----------
+   · libera la memoria de gráficos al salir de la pantalla (clave en iPhone/Safari)
+   · baja la resolución en celulares
+   · se pausa cuando no está a la vista
+   · si el navegador corta los gráficos, se oculta en vez de romper la página */
+const isMobile = typeof navigator !== 'undefined' && /iphone|ipad|ipod|android/i.test(navigator.userAgent);
+
+function ReleaseOnUnmount() {
+  const gl = useThree(s => s.gl);
+  useEffect(
+    () => () => {
+      try {
+        gl.dispose();
+        gl.forceContextLoss();
+      } catch {
+        /* ya liberado */
+      }
+    },
+    [gl]
+  );
+  return null;
+}
+
+function SafeCanvas({ children, dpr = [1, 2], gl, keepRendering = false, ...props }) {
+  const wrap = useRef(null);
+  const [visible, setVisible] = useState(true);
+  const [lost, setLost] = useState(false);
+
+  useEffect(() => {
+    if (keepRendering || !wrap.current) return undefined;
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { rootMargin: '100px' });
+    io.observe(wrap.current);
+    return () => io.disconnect();
+  }, [keepRendering]);
+
+  if (lost) return null;
+  const maxDpr = isMobile ? Math.min(1.5, Array.isArray(dpr) ? dpr[1] : dpr) : Array.isArray(dpr) ? dpr[1] : dpr;
+  return (
+    <div ref={wrap} className="h-full w-full">
+      <Canvas
+        {...props}
+        dpr={[1, maxDpr]}
+        frameloop={visible ? 'always' : 'never'}
+        gl={{ antialias: !isMobile, alpha: true, powerPreference: 'default', ...gl }}
+        onCreated={({ gl: renderer }) => {
+          renderer.domElement.addEventListener('webglcontextlost', e => {
+            e.preventDefault();
+            setLost(true);
+          });
+        }}
+      >
+        {children}
+        <ReleaseOnUnmount />
+      </Canvas>
+    </div>
+  );
+}
+
 /* ---------- medidas (proporción real de un iPhone) ---------- */
 const W = 1;
 const H = 2.06;
@@ -15,6 +73,15 @@ const HALF = DEPTH / 2 + BEVEL; // z de cada cara
 
 /* ---------- colores ---------- */
 const COLORS = [
+  [/naranja c[oó]smico|cosmic orange/i, '#d8743c'],
+  [/azul profundo|deep blue/i, '#2e3d5e'],
+  [/azul cielo|sky blue/i, '#bcd3e6'],
+  [/azul niebla|mist blue/i, '#b7c7d9'],
+  [/lavanda|lavender/i, '#c9bde3'],
+  [/salvia|sage/i, '#b9c8b0'],
+  [/dorado claro|light gold/i, '#e7d7b5'],
+  [/blanco nube|cloud white/i, '#f0eeea'],
+  [/negro espacial|space black/i, '#26272b'],
   [/titanio desierto|desert/i, '#c4a586'],
   [/titanio natural|natural/i, '#b9b3a9'],
   [/titanio blanco|blanco/i, '#e6e3dd'],
@@ -38,6 +105,7 @@ export function phoneColor(name) {
   return COLORS.find(([re]) => re.test(name))?.[1] ?? '#3a3550';
 }
 export function phoneVariant(model = '') {
+  if (/1[7-9]\s*pro/i.test(model)) return 'pro17';
   if (/pro/i.test(model)) return 'pro';
   if (/air/i.test(model)) return 'air';
   return 'base';
@@ -60,15 +128,17 @@ function roundedRect(w, h, r) {
   return s;
 }
 
+let GEOS = null;
 function useGeometries() {
   return useMemo(() => {
+    if (GEOS) return GEOS;
     const body = new THREE.ExtrudeGeometry(roundedRect(W - BEVEL * 2, H - BEVEL * 2, R - BEVEL), {
       depth: DEPTH,
       bevelEnabled: true,
       bevelThickness: BEVEL,
       bevelSize: BEVEL,
-      bevelSegments: 6,
-      curveSegments: 24
+      bevelSegments: 8,
+      curveSegments: 32
     });
     body.translate(0, 0, -DEPTH / 2);
     const bezel = new THREE.ShapeGeometry(roundedRect(W - 0.03, H - 0.03, R - 0.015), 24);
@@ -85,7 +155,12 @@ function useGeometries() {
     const bumpPro = new THREE.ExtrudeGeometry(roundedRect(0.46, 0.46, 0.12), { depth: 0.012, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 3, curveSegments: 16 });
     const bumpBase = new THREE.ExtrudeGeometry(roundedRect(0.2, 0.42, 0.1), { depth: 0.012, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 3, curveSegments: 16 });
     const bumpAir = new THREE.ExtrudeGeometry(roundedRect(W - 0.08, 0.26, 0.11), { depth: 0.014, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelSegments: 3, curveSegments: 16 });
-    return { body, bezel, screen, island, bumpPro, bumpBase, bumpAir };
+    // iPhone 17 Pro: meseta de cámaras de lado a lado + ventana de vidrio para las lentes
+    const plateau = new THREE.ExtrudeGeometry(roundedRect(W - 0.05, 0.58, 0.13), { depth: 0.016, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.012, bevelSegments: 4, curveSegments: 20 });
+    const lensWindow = new THREE.ShapeGeometry(roundedRect(0.5, 0.5, 0.13), 20);
+    const port = new THREE.ShapeGeometry(roundedRect(0.13, 0.034, 0.017), 10);
+    GEOS = { body, bezel, screen, island, bumpPro, bumpBase, bumpAir, plateau, lensWindow, port };
+    return GEOS;
   }, []);
 }
 
@@ -156,6 +231,10 @@ function Lens({ position, r = 0.078 }) {
         <cylinderGeometry args={[r, r, 0.022, 40]} />
         <meshPhysicalMaterial color="#05060a" roughness={0.05} metalness={0.3} clearcoat={1} />
       </mesh>
+      <mesh position={[0, 0, 0.0336]}>
+        <ringGeometry args={[r * 0.55, r * 0.62, 40]} />
+        <meshStandardMaterial color="#2a2d3a" metalness={0.8} roughness={0.3} />
+      </mesh>
       <mesh position={[0, 0, 0.0335]}>
         <circleGeometry args={[r * 0.45, 32]} />
         <meshPhysicalMaterial color="#0c1022" roughness={0} metalness={0.5} clearcoat={1} emissive="#140a2e" emissiveIntensity={0.25} />
@@ -174,6 +253,35 @@ function CameraModule({ variant, color, geos }) {
         <mesh position={[0.05, 0, 0.026]}>
           <circleGeometry args={[0.022, 20]} />
           <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
+        </mesh>
+      </group>
+    );
+  }
+  if (variant === 'pro17') {
+    return (
+      <group position={[0, H / 2 - 0.31, 0]}>
+        <mesh geometry={geos.plateau}>
+          <meshStandardMaterial color={color} roughness={0.32} metalness={0.85} />
+        </mesh>
+        <mesh geometry={geos.lensWindow} position={[-W / 2 + 0.3, 0, 0.0285]}>
+          <meshPhysicalMaterial color="#0b0b10" roughness={0.08} metalness={0.2} clearcoat={1} />
+        </mesh>
+        <group position={[-W / 2 + 0.3, 0, 0.017]}>
+          <Lens position={[-0.11, 0.115, 0.012]} r={0.082} />
+          <Lens position={[-0.11, -0.115, 0.012]} r={0.082} />
+          <Lens position={[0.11, 0, 0.012]} r={0.082} />
+        </group>
+        <mesh position={[W / 2 - 0.15, 0.12, 0.0295]}>
+          <circleGeometry args={[0.03, 24]} />
+          <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
+        </mesh>
+        <mesh position={[W / 2 - 0.15, -0.12, 0.0295]}>
+          <circleGeometry args={[0.026, 24]} />
+          <meshStandardMaterial color="#111" roughness={0.2} />
+        </mesh>
+        <mesh position={[W / 2 - 0.3, 0.12, 0.0295]}>
+          <circleGeometry args={[0.012, 16]} />
+          <meshStandardMaterial color="#111" roughness={0.3} />
         </mesh>
       </group>
     );
@@ -274,6 +382,10 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
         <mesh geometry={geos.island} position={[0, H / 2 - 0.115, 0.0016]}>
           <meshBasicMaterial color="#000" />
         </mesh>
+        {/* vidrio frontal: reflejo sutil */}
+        <mesh geometry={geos.bezel} position={[0, 0, 0.0024]}>
+          <meshPhysicalMaterial color="#ffffff" transparent opacity={0.06} roughness={0} metalness={0} clearcoat={1} clearcoatRoughness={0} />
+        </mesh>
         {marks.filter(m => m.side === 'front').map(m => (
           <Hotspot key={m.id} mark={m} active={activeMark === m.id} onSelect={onMark} />
         ))}
@@ -286,6 +398,28 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
           <Hotspot key={m.id} mark={m} active={activeMark === m.id} onSelect={onMark} />
         ))}
       </group>
+
+      {/* borde inferior: USB-C y parlantes */}
+      <mesh geometry={geos.port} position={[0, -H / 2 - 0.0005, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <meshBasicMaterial color="#050505" side={THREE.DoubleSide} />
+      </mesh>
+      {[-1, 1].map(side =>
+        [0, 1, 2, 3, 4].map(i => (
+          <mesh key={`${side}${i}`} position={[side * (0.14 + i * 0.03), -H / 2 - 0.0005, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.008, 10]} />
+            <meshBasicMaterial color="#050505" side={THREE.DoubleSide} />
+          </mesh>
+        ))
+      )}
+      {/* líneas de antena */}
+      {[H / 2 - 0.14, -H / 2 + 0.14].flatMap(y =>
+        [-1, 1].map(side => (
+          <mesh key={`${y}${side}`} position={[side * (W / 2 + 0.0015), y, 0]} rotation={[0, side * Math.PI / 2, 0]}>
+            <planeGeometry args={[DEPTH * 1.2, 0.012]} />
+            <meshStandardMaterial color="#2a2a2e" roughness={0.6} side={THREE.DoubleSide} />
+          </mesh>
+        ))
+      )}
 
       {/* botones laterales */}
       <mesh position={[W / 2 + 0.004, 0.35, 0]}>
@@ -310,7 +444,7 @@ export function StudioLights({ intensity = 1 }) {
       <directionalLight position={[3, 4, 5]} intensity={1.6 * intensity} />
       <directionalLight position={[-4, 2, -3]} intensity={0.9 * intensity} color="#a78bfa" />
       <pointLight position={[0, -3, 3]} intensity={6 * intensity} color="#3b82f6" />
-      <Environment resolution={256} frames={1}>
+      <Environment resolution={isMobile ? 64 : 128} frames={1}>
         <Lightformer intensity={2.2} position={[0, 4, 3]} scale={[8, 2, 1]} />
         <Lightformer intensity={1.4} position={[-5, 0, 1]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} color="#8b5cf6" />
         <Lightformer intensity={1.4} position={[5, 0, 1]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} color="#3b82f6" />
@@ -343,7 +477,7 @@ function Parallax({ children }) {
 export function HeroPhones({ className }) {
   return (
     <div className={className}>
-      <Canvas camera={{ position: [0, 0, 6], fov: 32 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
+      <SafeCanvas camera={{ position: [0, 0, 6], fov: 32 }} dpr={[1, 1.75]}>
         <Suspense fallback={null}>
           <StudioLights />
           <Parallax>
@@ -354,7 +488,7 @@ export function HeroPhones({ className }) {
             ))}
           </Parallax>
         </Suspense>
-      </Canvas>
+      </SafeCanvas>
     </div>
   );
 }
@@ -384,7 +518,7 @@ export const PhoneViewer = forwardRef(function PhoneViewer({ color, variant, mar
 
   return (
     <div className={className}>
-      <Canvas camera={{ position: [0, 0, 6], fov: 30 }} dpr={[1, 2]} gl={{ antialias: true, alpha: true }}>
+      <SafeCanvas camera={{ position: [0, 0, 6], fov: 30 }} dpr={[1, 2]}>
         <Suspense fallback={null}>
           <StudioLights />
           <PhoneModel color={color} variant={variant} marks={marks} activeMark={activeMark} onMark={onMark} />
@@ -403,7 +537,7 @@ export const PhoneViewer = forwardRef(function PhoneViewer({ color, variant, mar
           <SpinIntro controls={controls} enabled={spinning} />
           <TurnTo controls={controls} target={target} onDone={() => setTarget(null)} />
         </Suspense>
-      </Canvas>
+      </SafeCanvas>
     </div>
   );
 });
@@ -441,13 +575,13 @@ export function PhoneStudio({ color, variant, view = 'angle', className }) {
   };
   return (
     <div className={className}>
-      <Canvas camera={{ position: [0, 0, 5.4], fov: 30 }} dpr={2} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }} shadows>
+      <SafeCanvas camera={{ position: [0, 0, 5.4], fov: 30 }} dpr={2} gl={{ antialias: true, preserveDrawingBuffer: true }} keepRendering>
         <Suspense fallback={null}>
           <StudioLights />
           <Spin />
           <ContactShadows position={[0, -1.22, 0]} opacity={0.55} scale={5} blur={2.4} far={2} color="#000" />
         </Suspense>
-      </Canvas>
+      </SafeCanvas>
     </div>
   );
 }
@@ -458,4 +592,166 @@ export function useIsLowPower() {
     setLow(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, []);
   return low;
+}
+
+/* ---------- Portada estilo vitrina: plataforma giratoria que se mueve con el dedo ---------- */
+export const SHOWCASE = [
+  { name: 'iPhone 17 Pro Max', color: 'Naranja cósmico', hex: '#d8743c', variant: 'pro17' },
+  { name: 'iPhone 17 Pro', color: 'Azul profundo', hex: '#2e3d5e', variant: 'pro17' },
+  { name: 'iPhone Air', color: 'Azul cielo', hex: '#bcd3e6', variant: 'air' },
+  { name: 'iPhone 17', color: 'Lavanda', hex: '#c9bde3', variant: 'base' },
+  { name: 'iPhone 17 Pro', color: 'Plata', hex: '#d9dadc', variant: 'pro17' },
+  { name: 'iPhone 16 Pro', color: 'Titanio desierto', hex: '#c4a586', variant: 'pro' }
+];
+const RING = 1.85;
+const STEP = (Math.PI * 2) / SHOWCASE.length;
+
+function Turntable({ index, drag }) {
+  const ring = useRef();
+  const spins = useRef([]);
+  useFrame((_, dt) => {
+    if (!ring.current) return;
+    const target = -index * STEP + drag.current;
+    // camino más corto hacia el destino
+    let diff = target - ring.current.rotation.y;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    ring.current.rotation.y += diff * Math.min(1, dt * (drag.active ? 14 : 4));
+    spins.current.forEach((g, i) => {
+      if (!g) return;
+      // el del frente gira más lento para lucirse; los demás, de a poco
+      g.rotation.y += dt * (i === index ? 0.55 : 0.25);
+    });
+  });
+  return (
+    <group ref={ring}>
+      {SHOWCASE.map((p, i) => {
+        const a = i * STEP;
+        const front = i === index;
+        return (
+          <group key={i} position={[Math.sin(a) * RING, 0, Math.cos(a) * RING]}>
+            <group ref={el => (spins.current[i] = el)} scale={front ? 1.12 : 0.9}>
+              <PhoneModel color={p.hex} variant={p.variant} />
+            </group>
+            {/* pedestal */}
+            <mesh position={[0, -H / 2 - 0.09, 0]}>
+              <cylinderGeometry args={[0.62, 0.66, 0.08, 48]} />
+              <meshStandardMaterial color="#120c24" metalness={0.9} roughness={0.25} />
+            </mesh>
+            <mesh position={[0, -H / 2 - 0.045, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.6, 0.63, 64]} />
+              <meshBasicMaterial color={front ? '#c4b5fd' : '#6d28d9'} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
+      {/* plataforma de la vitrina */}
+      <mesh position={[0, -H / 2 - 0.2, 0]}>
+        <cylinderGeometry args={[RING + 0.95, RING + 1.05, 0.12, 96]} />
+        <meshStandardMaterial color="#0b0718" metalness={0.85} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, -H / 2 - 0.139, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[RING + 0.9, RING + 0.95, 128]} />
+        <meshBasicMaterial color="#8b5cf6" toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+export function HeroVitrina({ className, onConsult }) {
+  const [index, setIndex] = useState(0);
+  const drag = useRef(0);
+  const state = useRef({ active: false, x: 0, moved: false });
+  const idle = useRef(Date.now());
+  const n = SHOWCASE.length;
+  const go = d => {
+    idle.current = Date.now();
+    setIndex(i => (i + d + n) % n);
+  };
+
+  // pasa solo al siguiente cada 4,5 s si nadie la toca
+  useEffect(() => {
+    const t = setInterval(() => {
+      if (!state.current.active && Date.now() - idle.current > 4500) setIndex(i => (i + 1) % n);
+    }, 1000);
+    return () => clearInterval(t);
+  }, [n]);
+
+  const onDown = e => {
+    state.current = { active: true, x: e.clientX, moved: false };
+    drag.active = true;
+    idle.current = Date.now();
+  };
+  const onMove = e => {
+    if (!state.current.active) return;
+    const dx = e.clientX - state.current.x;
+    if (Math.abs(dx) > 4) state.current.moved = true;
+    drag.current = (dx / 260) * STEP * 1.6;
+  };
+  const onUp = () => {
+    if (!state.current.active) return;
+    state.current.active = false;
+    drag.active = false;
+    const steps = Math.round(drag.current / STEP);
+    drag.current = 0;
+    if (steps) setIndex(i => (((i - steps) % n) + n) % n);
+    idle.current = Date.now();
+  };
+
+  const cur = SHOWCASE[index];
+  return (
+    <div className={className}>
+      <div
+        className="absolute inset-0 cursor-grab touch-pan-y active:cursor-grabbing"
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerLeave={onUp}
+        onPointerCancel={onUp}
+      >
+        <SafeCanvas camera={{ position: [0, 0.35, RING + 6.1], fov: 30 }} dpr={[1, 1.75]}>
+          <Suspense fallback={null}>
+            <StudioLights />
+            <spotLight position={[0, 5, RING + 2]} angle={0.45} penumbra={0.8} intensity={30} color="#ffffff" />
+            <group position={[0, 0.1, -RING + 0.2]}>
+              <Turntable index={index} drag={drag} />
+            </group>
+          </Suspense>
+        </SafeCanvas>
+      </div>
+      {/* controles de la vitrina */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-2 flex flex-col items-center gap-2 md:bottom-6">
+        <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-white/10 bg-black/40 py-1.5 pr-1.5 pl-1.5 backdrop-blur-md">
+          <button type="button" onClick={() => go(-1)} className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-lg hover:bg-white/20" aria-label="Anterior">
+            ‹
+          </button>
+          <div className="min-w-[150px] text-center leading-tight">
+            <div className="text-sm font-semibold">{cur.name}</div>
+            <div className="text-[11px] text-white/60">{cur.color}</div>
+          </div>
+          <button type="button" onClick={() => go(1)} className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-lg hover:bg-white/20" aria-label="Siguiente">
+            ›
+          </button>
+        </div>
+        <div className="flex gap-1.5">
+          {SHOWCASE.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => {
+                idle.current = Date.now();
+                setIndex(i);
+              }}
+              className={`pointer-events-auto h-1.5 rounded-full transition-all ${i === index ? 'w-5 bg-white' : 'w-1.5 bg-white/35'}`}
+              aria-label={`Ver ${SHOWCASE[i].name}`}
+            />
+          ))}
+        </div>
+        {onConsult && (
+          <button type="button" onClick={() => onConsult(cur)} className="pointer-events-auto text-xs font-semibold text-violet-200 hover:text-white">
+            Consultar por este modelo →
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }

@@ -12,7 +12,7 @@ import { TRADE_IN_MESSAGE } from '@/config';
 import { waLink } from '@/lib/utils';
 
 // three.js pesa: se carga aparte para que la página abra rápido
-const HeroPhones = lazy(() => import('@/components/Phone3D').then(m => ({ default: m.HeroPhones })));
+const HeroVitrina = lazy(() => import('@/components/Phone3D').then(m => ({ default: m.HeroVitrina })));
 
 function Hero() {
   return (
@@ -61,10 +61,13 @@ function Hero() {
           </motion.div>
         </div>
 
-        <div className="relative order-1 h-[46svh] min-h-[320px] md:order-2 md:h-[640px]">
+        <div className="relative order-1 h-[54svh] min-h-[380px] md:order-2 md:h-[660px]">
           <div className="absolute inset-[10%] -z-10 rounded-full bg-violet-600/30 blur-[90px]" />
           <Suspense fallback={null}>
-            <HeroPhones className="absolute inset-0" />
+            <HeroVitrina
+              className="absolute inset-0"
+              onConsult={m => window.open(waLink(`Hola! ¿Tienen ${m.name} ${m.color}? ¿Qué precio tiene?`), '_blank')}
+            />
           </Suspense>
         </div>
       </div>
