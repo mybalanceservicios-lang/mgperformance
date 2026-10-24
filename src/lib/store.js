@@ -17,6 +17,7 @@ const K = {
   reviews: 'mg_reviews_v4',
   tradein: 'mg_tradein_v1',
   leads: 'mg_leads_v1',
+  settings: 'mg_settings_v1',
   session: 'mg_demo_user'
 };
 const DEFAULTS = {
@@ -31,7 +32,8 @@ const DEFAULTS = {
   purchases: DEMO_PURCHASES,
   reviews: DEMO_REVIEWS,
   tradein: DEMO_TRADEIN,
-  leads: DEMO_LEADS
+  leads: DEMO_LEADS,
+  settings: {}
 };
 const STAFF_DOMAIN = 'staff.mgperformance.app';
 const pinPassword = pin => `mg-${pin}-pin`;
@@ -353,6 +355,23 @@ export async function createLead(lead) {
   // sin .select(): el visitante puede cargar pero no leer interesados
   const { error } = await supabase.from('leads').insert(body);
   if (error) throw new Error(error.message);
+}
+
+export async function getSetting(key) {
+  if (isDemo) return read('settings')[key] ?? null;
+  const { data, error } = await supabase.from('app_settings').select('value').eq('key', key).maybeSingle();
+  if (error) return null;
+  return data?.value ?? null;
+}
+
+export async function setSetting(key, value) {
+  if (isDemo) {
+    write('settings', { ...read('settings'), [key]: value });
+    return;
+  }
+  const { error } = await supabase.from('app_settings').upsert({ key, value, updated_at: new Date().toISOString() });
+  if (error) throw new Error(error.message);
+  window.dispatchEvent(new Event('mg:data'));
 }
 
 export async function listTradeIn() {

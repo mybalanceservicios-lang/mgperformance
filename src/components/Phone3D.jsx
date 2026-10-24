@@ -73,8 +73,8 @@ const HALF = DEPTH / 2 + BEVEL; // z de cada cara
 
 /* ---------- colores ---------- */
 const COLORS = [
-  [/naranja c[oó]smico|cosmic orange/i, '#d8743c'],
-  [/azul profundo|deep blue/i, '#2e3d5e'],
+  [/naranja c[oó]smico|cosmic orange/i, '#e8762e'],
+  [/azul profundo|deep blue/i, '#33456b'],
   [/azul cielo|sky blue/i, '#bcd3e6'],
   [/azul niebla|mist blue/i, '#b7c7d9'],
   [/lavanda|lavender/i, '#c9bde3'],
@@ -261,10 +261,7 @@ function CameraModule({ variant, color, geos }) {
     return (
       <group position={[0, H / 2 - 0.31, 0]}>
         <mesh geometry={geos.plateau}>
-          <meshStandardMaterial color={color} roughness={0.32} metalness={0.85} />
-        </mesh>
-        <mesh geometry={geos.lensWindow} position={[-W / 2 + 0.3, 0, 0.0285]}>
-          <meshPhysicalMaterial color="#0b0b10" roughness={0.08} metalness={0.2} clearcoat={1} />
+          <meshPhysicalMaterial color={color} roughness={0.38} metalness={0.35} clearcoat={0.3} clearcoatRoughness={0.5} />
         </mesh>
         <group position={[-W / 2 + 0.3, 0, 0.017]}>
           <Lens position={[-0.11, 0.115, 0.012]} r={0.082} />
@@ -364,7 +361,7 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
       {/* cuerpo: [0] tapas (vidrio trasero) · [1] marco */}
       <mesh geometry={geos.body} castShadow>
         <meshPhysicalMaterial attach="material-0" color={tint} roughness={0.42} metalness={0.15} clearcoat={0.6} clearcoatRoughness={0.4} />
-        <meshStandardMaterial attach="material-1" color={frame} roughness={0.22} metalness={0.95} />
+        <meshStandardMaterial attach="material-1" color={frame} roughness={0.28} metalness={0.7} />
       </mesh>
 
       {/* frente */}
@@ -440,15 +437,16 @@ export function PhoneModel({ color = '#3a3550', variant = 'pro', marks = [], act
 export function StudioLights({ intensity = 1 }) {
   return (
     <>
-      <ambientLight intensity={0.35 * intensity} />
-      <directionalLight position={[3, 4, 5]} intensity={1.6 * intensity} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.9 * intensity} color="#a78bfa" />
-      <pointLight position={[0, -3, 3]} intensity={6 * intensity} color="#3b82f6" />
+      <ambientLight intensity={0.6 * intensity} />
+      <directionalLight position={[3, 4, 5]} intensity={1.8 * intensity} />
+      <directionalLight position={[-4, 2, 3]} intensity={0.8 * intensity} />
+      <directionalLight position={[0, 3, -5]} intensity={0.6 * intensity} />
       <Environment resolution={isMobile ? 64 : 128} frames={1}>
-        <Lightformer intensity={2.2} position={[0, 4, 3]} scale={[8, 2, 1]} />
-        <Lightformer intensity={1.4} position={[-5, 0, 1]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} color="#8b5cf6" />
-        <Lightformer intensity={1.4} position={[5, 0, 1]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} color="#3b82f6" />
-        <Lightformer intensity={0.8} position={[0, -4, -3]} scale={[8, 2, 1]} />
+        <Lightformer intensity={2.4} position={[0, 4, 3]} scale={[8, 2, 1]} />
+        <Lightformer intensity={1.2} position={[-5, 0, 1]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} />
+        <Lightformer intensity={1.2} position={[5, 0, 1]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} />
+        <Lightformer intensity={0.4} position={[0, 0, -5]} scale={[8, 4, 1]} color="#8b5cf6" />
+        <Lightformer intensity={0.8} position={[0, -4, 2]} scale={[8, 2, 1]} />
       </Environment>
     </>
   );
@@ -596,12 +594,12 @@ export function useIsLowPower() {
 
 /* ---------- Portada estilo vitrina: plataforma giratoria que se mueve con el dedo ---------- */
 export const SHOWCASE = [
-  { name: 'iPhone 17 Pro Max', color: 'Naranja cósmico', hex: '#d8743c', variant: 'pro17' },
-  { name: 'iPhone 17 Pro', color: 'Azul profundo', hex: '#2e3d5e', variant: 'pro17' },
+  { name: 'iPhone 17 Pro Max', color: 'Naranja cósmico', hex: '#e8762e', variant: 'pro17' },
+  { name: 'iPhone 17 Pro', color: 'Azul profundo', hex: '#33456b', variant: 'pro17' },
   { name: 'iPhone Air', color: 'Azul cielo', hex: '#bcd3e6', variant: 'air' },
   { name: 'iPhone 17', color: 'Lavanda', hex: '#c9bde3', variant: 'base' },
-  { name: 'iPhone 17 Pro', color: 'Plata', hex: '#d9dadc', variant: 'pro17' },
-  { name: 'iPhone 16 Pro', color: 'Titanio desierto', hex: '#c4a586', variant: 'pro' }
+  { name: 'iPhone 17 Pro', color: 'Plata', hex: '#e4e5e7', variant: 'pro17' },
+  { name: 'iPhone 16 Pro', color: 'Titanio desierto', hex: '#c9ad8f', variant: 'pro' }
 ];
 const RING = 1.85;
 const STEP = (Math.PI * 2) / SHOWCASE.length;
@@ -616,10 +614,19 @@ function Turntable({ index, drag }) {
     let diff = target - ring.current.rotation.y;
     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
     ring.current.rotation.y += diff * Math.min(1, dt * (drag.active ? 14 : 4));
+    const rr = ring.current.rotation.y;
     spins.current.forEach((g, i) => {
       if (!g) return;
-      // el del frente gira más lento para lucirse; los demás, de a poco
-      g.rotation.y += dt * (i === index ? 0.55 : 0.25);
+      if (i === index) {
+        g.rotation.y += dt * 0.45; // el del frente gira despacio sobre sí mismo
+        return;
+      }
+      // los demás quedan quietos mostrando las cámaras, inclinados hacia el centro
+      const side = Math.sin(i * STEP + rr) > 0 ? -1 : 1;
+      const target = Math.PI + side * 0.55 - rr;
+      let d = target - g.rotation.y;
+      d = Math.atan2(Math.sin(d), Math.cos(d));
+      g.rotation.y += d * Math.min(1, dt * 3);
     });
   });
   return (
@@ -667,14 +674,6 @@ export function HeroVitrina({ className, onConsult }) {
     idle.current = Date.now();
     setIndex(i => (i + d + n) % n);
   };
-
-  // pasa solo al siguiente cada 4,5 s si nadie la toca
-  useEffect(() => {
-    const t = setInterval(() => {
-      if (!state.current.active && Date.now() - idle.current > 4500) setIndex(i => (i + 1) % n);
-    }, 1000);
-    return () => clearInterval(t);
-  }, [n]);
 
   const onDown = e => {
     state.current = { active: true, x: e.clientX, moved: false };

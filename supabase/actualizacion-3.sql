@@ -22,6 +22,18 @@ create policy "cotizador público" on public.trade_in_prices for select using (t
 drop policy if exists "dueño gestiona cotizador" on public.trade_in_prices;
 create policy "dueño gestiona cotizador" on public.trade_in_prices for all using (public.is_owner()) with check (public.is_owner());
 
+-- Parámetros del cotizador (porcentajes por estado, batería, falla y rango). Los edita Matías.
+create table if not exists public.app_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table public.app_settings enable row level security;
+drop policy if exists "ajustes públicos" on public.app_settings;
+create policy "ajustes públicos" on public.app_settings for select using (true);
+drop policy if exists "dueño edita ajustes" on public.app_settings;
+create policy "dueño edita ajustes" on public.app_settings for all using (public.is_owner()) with check (public.is_owner());
+
 -- ───────────── Interesados ─────────────
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),

@@ -4,7 +4,8 @@ import { motion } from 'motion/react';
 import { Check, ChevronLeft, Loader2, RefreshCcw, ShieldCheck } from 'lucide-react';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import { cardTitle } from '@/components/ListingCard';
-import { STORE, TRADE_IN } from '@/config';
+import { STORE } from '@/config';
+import { useTradeInRules } from '@/lib/tradeInRules';
 import { createLead, listTradeIn } from '@/lib/store';
 import { formatARS, toPesos, useDolar } from '@/lib/dolar';
 import { cn, formatPrice, waLink } from '@/lib/utils';
@@ -53,6 +54,7 @@ export default function TradeIn({ products }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const rate = useDolar();
+  const TRADE_IN = useTradeInRules();
 
   useEffect(() => {
     window.scrollTo(0, 0);
