@@ -31,7 +31,7 @@ export default function Footer() {
         </div>
       </div>
       <p className="mt-6 text-center text-xs text-faint">
-        © {new Date().getFullYear()} {STORE.name}. iPhone es una marca de Apple Inc. No somos distribuidores oficiales.
+        © {new Date().getFullYear()} {STORE.name}. Todos los derechos reservados. Diseño y desarrollo: RT Design. iPhone es una marca de Apple Inc.; no somos distribuidores oficiales.
       </p>
     </footer>
   );

@@ -1,4 +1,5 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
+import { setProtection } from '@/lib/protect';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -34,6 +35,9 @@ export default function App() {
   const { pathname } = useLocation();
   const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/studio');
   const isProduct = pathname.startsWith('/producto');
+  useEffect(() => {
+    setProtection(!isAdmin);
+  }, [isAdmin]);
   // Los vendidos desaparecen de la tienda (siguen en el sistema de gestión)
   const shop = products.filter(p => p.status !== 'vendido');
 

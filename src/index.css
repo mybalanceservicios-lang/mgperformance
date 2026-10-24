@@ -513,3 +513,20 @@ select.field {
   0% { transform: scale(0.4); opacity: 0.9; }
   100% { transform: scale(5.5); opacity: 0; }
 }
+
+/* Protección de la tienda: no se puede seleccionar texto (salvo en campos) */
+html.protected body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html.protected input,
+html.protected textarea,
+html.protected select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+html.protected img,
+html.protected video {
+  -webkit-user-drag: none;
+}

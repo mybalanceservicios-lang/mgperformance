@@ -220,40 +220,95 @@ function getWallpaper() {
 }
 
 /* ---------- partes ---------- */
-function Lens({ position, r = 0.078 }) {
+// Textura de lente de cámara: vidrio oscuro con anillos internos, recubrimiento violeta y un brillo
+let lensTexture = null;
+function getLensTexture() {
+  if (lensTexture) return lensTexture;
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  const cx = 128;
+  g.fillStyle = '#07080c';
+  g.beginPath();
+  g.arc(cx, cx, 128, 0, Math.PI * 2);
+  g.fill();
+  // borde interior gris (montura de la lente)
+  let grad = g.createRadialGradient(cx, cx, 90, cx, cx, 128);
+  grad.addColorStop(0, 'rgba(0,0,0,0)');
+  grad.addColorStop(0.7, 'rgba(70,72,82,0.9)');
+  grad.addColorStop(1, 'rgba(20,20,26,1)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  // anillos concéntricos de los elementos ópticos
+  for (const [r, a] of [[96, 0.35], [74, 0.28], [52, 0.25]]) {
+    g.strokeStyle = `rgba(150,155,185,${a})`;
+    g.lineWidth = 2;
+    g.beginPath();
+    g.arc(cx, cx, r, 0, Math.PI * 2);
+    g.stroke();
+  }
+  // recubrimiento antirreflejo (violeta / azul)
+  grad = g.createRadialGradient(cx - 10, cx - 10, 4, cx, cx, 70);
+  grad.addColorStop(0, 'rgba(40,20,90,0.95)');
+  grad.addColorStop(0.5, 'rgba(60,50,150,0.55)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(cx, cx, 70, 0, Math.PI * 2);
+  g.fill();
+  // pupila
+  g.fillStyle = '#020204';
+  g.beginPath();
+  g.arc(cx, cx, 22, 0, Math.PI * 2);
+  g.fill();
+  // brillo de luz
+  grad = g.createRadialGradient(cx - 38, cx - 42, 0, cx - 38, cx - 42, 30);
+  grad.addColorStop(0, 'rgba(255,255,255,0.85)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  lensTexture = new THREE.CanvasTexture(c);
+  lensTexture.colorSpace = THREE.SRGBColorSpace;
+  return lensTexture;
+}
+
+function Lens({ position, r = 0.078, ring = '#9a9ca4' }) {
+  const tex = useMemo(() => (typeof document !== 'undefined' ? getLensTexture() : null), []);
   return (
     <group position={position}>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.012]}>
-        <cylinderGeometry args={[r + 0.014, r + 0.016, 0.03, 40]} />
-        <meshStandardMaterial color="#6f6f78" metalness={1} roughness={0.35} />
+      {/* aro elevado del color del equipo */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.013]}>
+        <cylinderGeometry args={[r + 0.017, r + 0.019, 0.026, 48]} />
+        <meshStandardMaterial color={ring} metalness={0.45} roughness={0.3} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, 0.022]}>
-        <cylinderGeometry args={[r, r, 0.022, 40]} />
-        <meshPhysicalMaterial color="#05060a" roughness={0.05} metalness={0.3} clearcoat={1} />
-      </mesh>
-      <mesh position={[0, 0, 0.0336]}>
-        <ringGeometry args={[r * 0.55, r * 0.62, 40]} />
-        <meshStandardMaterial color="#2a2d3a" metalness={0.8} roughness={0.3} />
-      </mesh>
-      <mesh position={[0, 0, 0.0335]}>
-        <circleGeometry args={[r * 0.45, 32]} />
-        <meshPhysicalMaterial color="#0c1022" roughness={0} metalness={0.5} clearcoat={1} emissive="#140a2e" emissiveIntensity={0.25} />
+      {/* vidrio de la lente */}
+      <mesh position={[0, 0, 0.0265]}>
+        <circleGeometry args={[r, 48]} />
+        <meshBasicMaterial map={tex} toneMapped={false} />
       </mesh>
     </group>
   );
 }
 
+function Flash({ position, r = 0.025 }) {
+  return (
+    <mesh position={position}>
+      <circleGeometry args={[r, 24]} />
+      <meshStandardMaterial color="#f3ead0" emissive="#5a4e2c" emissiveIntensity={0.6} roughness={0.4} />
+    </mesh>
+  );
+}
+
 function CameraModule({ variant, color, geos }) {
+  const ring = color.clone().lerp(new THREE.Color('#000000'), 0.12).getStyle();
+  const steel = color.clone().lerp(new THREE.Color('#a6a8ae'), 0.5).getStyle();
   const glass = <meshPhysicalMaterial color={color} roughness={0.12} metalness={0.25} clearcoat={1} clearcoatRoughness={0.1} />;
   if (variant === 'air') {
     return (
       <group position={[0, H / 2 - 0.2, 0]}>
         <mesh geometry={geos.bumpAir}>{glass}</mesh>
-        <Lens position={[-0.28, 0, 0.012]} r={0.07} />
-        <mesh position={[0.05, 0, 0.026]}>
-          <circleGeometry args={[0.022, 20]} />
-          <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
-        </mesh>
+        <Lens position={[-0.28, 0, 0.012]} r={0.072} ring={ring} />
+        <Flash position={[0.05, 0, 0.026]} r={0.022} />
       </group>
     );
   }
@@ -264,14 +319,11 @@ function CameraModule({ variant, color, geos }) {
           <meshPhysicalMaterial color={color} roughness={0.38} metalness={0.35} clearcoat={0.3} clearcoatRoughness={0.5} />
         </mesh>
         <group position={[-W / 2 + 0.3, 0, 0.017]}>
-          <Lens position={[-0.11, 0.115, 0.012]} r={0.082} />
-          <Lens position={[-0.11, -0.115, 0.012]} r={0.082} />
-          <Lens position={[0.11, 0, 0.012]} r={0.082} />
+          <Lens position={[-0.11, 0.115, 0.012]} r={0.08} ring={ring} />
+          <Lens position={[-0.11, -0.115, 0.012]} r={0.08} ring={ring} />
+          <Lens position={[0.11, 0, 0.012]} r={0.08} ring={ring} />
         </group>
-        <mesh position={[W / 2 - 0.15, 0.12, 0.0295]}>
-          <circleGeometry args={[0.03, 24]} />
-          <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
-        </mesh>
+        <Flash position={[W / 2 - 0.15, 0.12, 0.0295]} r={0.03} />
         <mesh position={[W / 2 - 0.15, -0.12, 0.0295]}>
           <circleGeometry args={[0.026, 24]} />
           <meshStandardMaterial color="#111" roughness={0.2} />
@@ -287,13 +339,10 @@ function CameraModule({ variant, color, geos }) {
     return (
       <group position={[-W / 2 + 0.3, H / 2 - 0.3, 0]}>
         <mesh geometry={geos.bumpPro}>{glass}</mesh>
-        <Lens position={[-0.1, 0.105, 0.012]} />
-        <Lens position={[-0.1, -0.105, 0.012]} />
-        <Lens position={[0.1, 0, 0.012]} />
-        <mesh position={[0.12, 0.15, 0.026]}>
-          <circleGeometry args={[0.025, 20]} />
-          <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
-        </mesh>
+        <Lens position={[-0.1, 0.105, 0.012]} r={0.075} ring={steel} />
+        <Lens position={[-0.1, -0.105, 0.012]} r={0.075} ring={steel} />
+        <Lens position={[0.1, 0, 0.012]} r={0.075} ring={steel} />
+        <Flash position={[0.12, 0.15, 0.026]} />
         <mesh position={[0.12, -0.15, 0.026]}>
           <circleGeometry args={[0.022, 20]} />
           <meshStandardMaterial color="#111" roughness={0.2} />
@@ -304,12 +353,9 @@ function CameraModule({ variant, color, geos }) {
   return (
     <group position={[-W / 2 + 0.2, H / 2 - 0.3, 0]}>
       <mesh geometry={geos.bumpBase}>{glass}</mesh>
-      <Lens position={[0, 0.1, 0.012]} r={0.07} />
-      <Lens position={[0, -0.1, 0.012]} r={0.07} />
-      <mesh position={[0.17, 0.12, 0.004]}>
-        <circleGeometry args={[0.024, 20]} />
-        <meshStandardMaterial color="#f6f1dc" emissive="#3b3420" />
-      </mesh>
+      <Lens position={[0, 0.1, 0.012]} r={0.068} ring={ring} />
+      <Lens position={[0, -0.1, 0.012]} r={0.068} ring={ring} />
+      <Flash position={[0.17, 0.12, 0.004]} r={0.024} />
     </group>
   );
 }
@@ -617,6 +663,11 @@ function Turntable({ index, drag }) {
     const rr = ring.current.rotation.y;
     spins.current.forEach((g, i) => {
       if (!g) return;
+      // tamaño: el del frente un poco más grande; siempre apoyado sobre su pedestal
+      const size = i === index ? 1.12 : 0.9;
+      const sc = THREE.MathUtils.damp(g.scale.x, size, 6, dt);
+      g.scale.setScalar(sc);
+      g.position.y = (sc - 1) * (H / 2) - 0.04;
       if (i === index) {
         g.rotation.y += dt * 0.45; // el del frente gira despacio sobre sí mismo
         return;
@@ -636,7 +687,7 @@ function Turntable({ index, drag }) {
         const front = i === index;
         return (
           <group key={i} position={[Math.sin(a) * RING, 0, Math.cos(a) * RING]}>
-            <group ref={el => (spins.current[i] = el)} scale={front ? 1.12 : 0.9}>
+            <group ref={el => (spins.current[i] = el)} scale={0.9} position={[0, -0.09, 0]}>
               <PhoneModel color={p.hex} variant={p.variant} />
             </group>
             {/* pedestal */}
