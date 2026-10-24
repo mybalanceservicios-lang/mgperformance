@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ArrowLeft, ArrowRight, Eye, Loader2, Minus, Plus, UploadCloud, X } from 'lucide-react';
-import ProductCard from '@/components/ProductCard';
+import ListingCard from '@/components/ListingCard';
 import { BatteryIcon, batteryColor, InfoTip, MediaView, Segmented, Switch } from '@/components/ui';
 import { CONDITIONS, STATUSES, STORAGE_OPTIONS, STORE } from '@/config';
 import { deleteMedia, saveProduct, setOwnerPrice, uploadMedia } from '@/lib/store';
@@ -414,7 +414,7 @@ export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerP
           <div className="sticky top-6">
             <p className="label flex items-center gap-1.5"><Eye size={14} /> Así se va a ver</p>
             <div className="pointer-events-none">
-              <ProductCard product={preview} />
+              <ListingCard product={preview} linkless />
             </div>
           </div>
         </aside>

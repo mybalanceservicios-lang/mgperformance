@@ -62,3 +62,19 @@ export const BATTERY_FILTERS = [
   { value: 95, label: '+95%' },
   { value: 100, label: '100%' }
 ];
+
+// Chequeos del diagnóstico de cada equipo (se marcan desde Inventario)
+export const CHECKS = [
+  { id: 'faceid', label: 'Face ID' },
+  { id: 'truetone', label: 'True Tone' },
+  { id: 'pantalla', label: 'Pantalla original' },
+  { id: 'camaras', label: 'Cámaras y flash' },
+  { id: 'audio', label: 'Parlantes y micrófono' },
+  { id: 'carga', label: 'Carga y MagSafe' },
+  { id: 'botones', label: 'Botones' },
+  { id: 'senal', label: 'Señal y Wi‑Fi' },
+  { id: 'sinreparar', label: 'Sin reparaciones' }
+];
+
+export const TRADE_IN_MESSAGE =
+  'Hola! Quiero entregar mi celular en parte de pago.\nModelo:\nCapacidad:\nBatería (%):\nEstado:\n¿Cuánto me lo toman?';

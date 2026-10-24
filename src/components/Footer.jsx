@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom';
 import { MapPin } from 'lucide-react';
 import Instagram from './InstagramIcon';
 import { STORE } from '@/config';
-import { Logo } from './Navbar';
+import { Logo } from './Header';
 import WhatsAppIcon from './WhatsAppIcon';
 import { waLink } from '@/lib/utils';
 
 export default function Footer() {
   return (
-    <footer id="contacto" className="mx-auto mt-24 max-w-6xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
-      <div className="neu grid gap-8 p-7 md:grid-cols-[1.3fr_1fr_1fr] md:p-10">
+    <footer id="contacto" className="mx-auto mt-20 max-w-7xl px-4 pb-[max(2rem,env(safe-area-inset-bottom))]">
+      <div className="ml-panel grid gap-8 p-7 md:grid-cols-[1.3fr_1fr_1fr] md:p-10">
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">{STORE.tagline}</p>

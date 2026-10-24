@@ -1,25 +1,71 @@
-// Productos de ejemplo para el modo demo. Se borran/editan desde el panel.
-export const DEMO_PRODUCTS = [
-  { model: 'iPhone 16 Pro Max', storage: '256GB', color: 'Titanio desierto', condition: 'nuevo', battery: 100, price: 1450, stock: 3, featured: true, includes: ['Caja', 'Cable USB-C'], warranty: '12 meses oficial Apple' },
-  { model: 'iPhone 16 Pro', storage: '128GB', color: 'Titanio negro', condition: 'como-nuevo', battery: 99, price: 1090, featured: true, includes: ['Caja', 'Cable USB-C'], warranty: '6 meses' },
-  { model: 'iPhone 15 Pro Max', storage: '256GB', color: 'Titanio natural', condition: 'usado-premium', battery: 92, price: 920, featured: true, includes: ['Cable USB-C'], warranty: '3 meses' },
-  { model: 'iPhone 15', storage: '128GB', color: 'Rosa', condition: 'como-nuevo', battery: 97, price: 640, includes: ['Caja', 'Cable USB-C'], warranty: '6 meses' },
-  { model: 'iPhone 14 Pro', storage: '256GB', color: 'Morado oscuro', condition: 'usado-premium', battery: 88, price: 610, includes: ['Cable'], warranty: '3 meses' },
-  { model: 'iPhone 14', storage: '128GB', color: 'Medianoche', condition: 'usado', battery: 85, price: 430, includes: [], warranty: '3 meses' },
-  { model: 'iPhone 13 Pro Max', storage: '512GB', color: 'Azul alpino', condition: 'usado-premium', battery: 90, price: 560, includes: ['Cable'], warranty: '3 meses' },
-  { model: 'iPhone 13', storage: '128GB', color: 'Blanco estelar', condition: 'usado', battery: 83, price: 340, includes: [], warranty: '3 meses', status: 'reservado' },
-  { model: 'iPhone 16e', storage: '128GB', color: 'Negro', condition: 'nuevo', battery: 100, price: 690, stock: 2, includes: ['Caja', 'Cable USB-C'], warranty: '12 meses oficial Apple' },
-  { model: 'iPhone 12', storage: '64GB', color: 'Azul', condition: 'usado', battery: 81, price: 250, includes: [], warranty: '1 mes' }
-].map((p, i) => ({
-  id: `demo-${i + 1}`,
-  created_at: new Date(Date.now() - i * 86400000).toISOString(),
-  description: '',
-  status: 'disponible',
-  featured: false,
-  media: [],
-  stock: 1,
-  ...p
-}));
+// Publicaciones de ejemplo (iPhones ficticios). Las imágenes y videos están en public/demo
+// y se generaron con el iPhone 3D de la web. Se borran desde el panel cuando ya no sirvan.
+const CHECKS_OK = { faceid: true, truetone: true, pantalla: true, camaras: true, audio: true, carga: true, botones: true, senal: true, sinreparar: true };
+
+const RAW = [
+  { slug: '16promax-desierto', model: 'iPhone 16 Pro Max', storage: '256GB', color: 'Titanio desierto', condition: 'nuevo', battery: 100, price: 1450, stock: 3, featured: true, includes: ['Caja', 'Cable USB-C'], warranty: '12 meses oficial Apple', video: true,
+    description: 'Equipo nuevo, en caja sellada. Lo activás vos.', marks: [] },
+  { slug: '16pro-negro', model: 'iPhone 16 Pro', storage: '128GB', color: 'Titanio negro', condition: 'como-nuevo', battery: 99, price: 1090, compare_price: 1180, featured: true, includes: ['Caja', 'Cable USB-C'], warranty: '6 meses',
+    description: 'Usado 2 meses, siempre con funda y vidrio. Impecable.', marks: [] },
+  { slug: '15promax-natural', model: 'iPhone 15 Pro Max', storage: '256GB', color: 'Titanio natural', condition: 'usado-premium', battery: 92, price: 920, featured: true, includes: ['Cable USB-C'], warranty: '3 meses', video: true,
+    description: 'Excelente estado. Un detalle mínimo en el marco, mirá el diagnóstico 3D.',
+    marks: [{ id: 'm1', side: 'back', x: 0.62, y: -0.86, title: 'Marca mínima en esquina inferior', note: 'Solo se ve con luz directa. No afecta el uso.' }] },
+  { slug: '15-rosa', model: 'iPhone 15', storage: '128GB', color: 'Rosa', condition: 'como-nuevo', battery: 97, price: 640, includes: ['Caja', 'Cable USB-C'], warranty: '6 meses',
+    description: 'Como nuevo, sin marcas de uso.', marks: [] },
+  { slug: '14pro-morado', model: 'iPhone 14 Pro', storage: '256GB', color: 'Morado oscuro', condition: 'usado-premium', battery: 88, price: 610, includes: ['Cable'], warranty: '3 meses', video: true,
+    description: 'Muy buen estado general. Batería 88%.',
+    marks: [{ id: 'm1', side: 'front', x: -0.55, y: 0.78, title: 'Microrayón en pantalla', note: 'Arriba a la izquierda, no se nota con la pantalla encendida.' }] },
+  { slug: '14-azul', model: 'iPhone 14', storage: '128GB', color: 'Azul', condition: 'usado', battery: 85, price: 430, includes: [], warranty: '3 meses',
+    description: 'Funciona perfecto. Tiene marcas leves de uso en el dorso.',
+    marks: [
+      { id: 'm1', side: 'back', x: 0.2, y: -0.3, title: 'Rayones leves en el dorso', note: 'Marcas finas de uso diario.' },
+      { id: 'm2', side: 'front', x: 0.7, y: -0.9, title: 'Golpe chico en el marco', note: 'Esquina inferior derecha.' }
+    ] },
+  { slug: '13promax-alpino', model: 'iPhone 13 Pro Max', storage: '512GB', color: 'Azul alpino', condition: 'usado-premium', battery: 90, price: 560, includes: ['Cable'], warranty: '3 meses',
+    description: '512GB, ideal para fotos y video.', marks: [] },
+  { slug: '13-estelar', model: 'iPhone 13', storage: '128GB', color: 'Blanco estelar', condition: 'usado', battery: 83, price: 340, includes: [], warranty: '3 meses', status: 'reservado',
+    description: 'Buen estado. Batería 83%.', checks: { truetone: false },
+    marks: [{ id: 'm1', side: 'back', x: -0.1, y: 0.1, title: 'Desgaste en el vidrio trasero', note: 'Marcas de uso visibles de cerca.' }] },
+  { slug: '16e-negro', model: 'iPhone 16e', storage: '128GB', color: 'Negro', condition: 'nuevo', battery: 100, price: 690, stock: 2, includes: ['Caja', 'Cable USB-C'], warranty: '12 meses oficial Apple',
+    description: 'Nuevo en caja sellada.', marks: [] },
+  { slug: 'air-blanco', model: 'iPhone Air', storage: '256GB', color: 'Blanco', condition: 'como-nuevo', battery: 100, price: 1050, includes: ['Caja', 'Cable USB-C'], warranty: '6 meses',
+    description: 'El más fino. Como nuevo.', marks: [] }
+];
+
+export const DEMO_RAW = RAW;
+
+export const DEMO_PRODUCTS = RAW.map((p, i) => {
+  const media = [
+    { id: `${p.slug}-2`, type: 'image', url: `demo/${p.slug}-2.webp`, path: null },
+    { id: `${p.slug}-1`, type: 'image', url: `demo/${p.slug}-1.webp`, path: null },
+    { id: `${p.slug}-3`, type: 'image', url: `demo/${p.slug}-3.webp`, path: null }
+  ];
+  if (p.video) media.splice(1, 0, { id: `${p.slug}-v`, type: 'video', url: `demo/${p.slug}.mp4`, path: null });
+  const videoId = p.video ? `${p.slug}-v` : `${p.slug}-2`;
+  const isNew = p.condition === 'nuevo';
+  return {
+    id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+    created_at: new Date(Date.now() - i * 86400000).toISOString(),
+    model: p.model,
+    storage: p.storage,
+    color: p.color,
+    condition: p.condition,
+    battery: p.battery,
+    price: p.price,
+    compare_price: p.compare_price ?? null,
+    description: `${p.description}\n\n(Publicación de ejemplo)`,
+    includes: p.includes,
+    warranty: p.warranty,
+    status: p.status ?? 'disponible',
+    featured: !!p.featured,
+    stock: p.stock ?? 1,
+    media,
+    diagnostics: {
+      checks: isNew ? {} : { ...CHECKS_OK, ...(p.checks ?? {}) },
+      marks: p.marks.map(m => ({ ...m, media_id: videoId }))
+    }
+  };
+});
 
 export const DEMO_PROFILES = [
   { id: 'owner', name: 'Dueño', email: 'dueno@demo', role: 'owner', active: true },

@@ -58,6 +58,7 @@ create table if not exists public.products (
   featured boolean not null default false,
   media jsonb not null default '[]',
   stock int not null default 1 check (stock >= 0),
+  diagnostics jsonb not null default '{}',
   created_by uuid references public.profiles (id) on delete set null default auth.uid()
 );
 
@@ -173,6 +174,23 @@ drop policy if exists "dueño edita ventas" on public.sales;
 create policy "dueño edita ventas" on public.sales for update using (public.is_owner());
 drop policy if exists "dueño borra ventas" on public.sales;
 create policy "dueño borra ventas" on public.sales for delete using (public.is_owner());
+
+-- ───────────── Reseñas ─────────────
+create table if not exists public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  name text not null,
+  text text not null,
+  rating int not null default 5 check (rating between 1 and 5),
+  model text,
+  photo_url text,
+  active boolean not null default true
+);
+alter table public.reviews enable row level security;
+drop policy if exists "reseñas públicas" on public.reviews;
+create policy "reseñas públicas" on public.reviews for select using (active or public.is_owner());
+drop policy if exists "dueño gestiona reseñas" on public.reviews;
+create policy "dueño gestiona reseñas" on public.reviews for all using (public.is_owner()) with check (public.is_owner());
 
 -- ───────────── Fotos y videos (Storage) ─────────────
 insert into storage.buckets (id, name, public)

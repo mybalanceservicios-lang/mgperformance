@@ -5,15 +5,15 @@ import { DEMO_PASSWORDS, DEMO_PRICES, DEMO_PRODUCTS, DEMO_PROFILES, DEMO_SALES }
 import { uid } from './utils';
 
 const K = {
-  products: 'mg_products_v2',
-  prices: 'mg_prices_v2',
-  sales: 'mg_sales_v2',
-  profiles: 'mg_profiles_v2',
+  products: 'mg_products_v3',
+  prices: 'mg_prices_v3',
+  sales: 'mg_sales_v3',
+  profiles: 'mg_profiles_v3',
   session: 'mg_demo_user'
 };
 const DEFAULTS = { products: DEMO_PRODUCTS, prices: DEMO_PRICES, sales: DEMO_SALES, profiles: DEMO_PROFILES };
 
-const FIELDS = ['model', 'storage', 'color', 'condition', 'battery', 'price', 'compare_price', 'description', 'includes', 'warranty', 'status', 'featured', 'media', 'stock'];
+const FIELDS = ['model', 'storage', 'color', 'condition', 'battery', 'price', 'compare_price', 'description', 'includes', 'warranty', 'status', 'featured', 'media', 'stock', 'diagnostics'];
 
 function clean(p) {
   const out = {};
