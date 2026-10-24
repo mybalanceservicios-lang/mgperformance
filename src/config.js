@@ -10,6 +10,8 @@ export const STORE = {
   instagram: 'mgperformance.ok',
   city: 'Buenos Aires',
   currency: 'USD', // 'USD' o 'ARS'
+  // Precio en pesos = dólares × dólar blue (venta). Se redondea para arriba a este múltiplo:
+  pesosRound: 1000,
   // Contraseña del panel SOLO en modo demo (sin Supabase). Con Supabase se usa email + contraseña.
   demoAdminPassword: 'admin'
 };

@@ -3,6 +3,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import WaterDrop from '@/components/WaterDrop';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import WhatsAppIcon from '@/components/WhatsAppIcon';
 import Home from '@/pages/Home';
 import Product from '@/pages/Product';
@@ -45,6 +46,7 @@ export default function App() {
           No pudimos cargar los equipos. {error}
         </div>
       )}
+      <ErrorBoundary resetKey={pathname}>
       <Routes>
         <Route path="/" element={<Home products={shop} loading={loading} />} />
         <Route path="/producto/:id" element={<Product products={shop} loading={loading} />} />
@@ -59,6 +61,7 @@ export default function App() {
         <Route path="/studio" element={<Suspense fallback={null}><Studio /></Suspense>} />
         <Route path="*" element={<Home products={shop} loading={loading} />} />
       </Routes>
+      </ErrorBoundary>
       {!isAdmin && <Footer />}
       {!isAdmin && !isProduct && <WhatsAppFab />}
     </>

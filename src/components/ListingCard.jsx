@@ -3,6 +3,7 @@ import { Play } from 'lucide-react';
 import { batteryColor, BatteryIcon, MediaView, PhoneMock } from './ui';
 import { cn, formatPrice, getCondition } from '@/lib/utils';
 import { phoneColor } from './Phone3D';
+import Pesos from './Pesos';
 
 export function off(p) {
   return p.compare_price && p.price && p.compare_price > p.price ? Math.round((1 - p.price / p.compare_price) * 100) : 0;
@@ -46,6 +47,7 @@ export default function ListingCard({ product: p, layout = 'grid', linkless }) {
             <span className="text-2xl font-normal tracking-tight text-white">{formatPrice(p.price)}</span>
             {discount > 0 && <span className="text-sm font-semibold text-ml-green">{discount}% OFF</span>}
           </div>
+          <Pesos usd={p.price} className="block text-[13px] text-white/50" />
         </div>
         {p.battery != null && (
           <p className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold" style={{ color: batteryColor(p.battery) }}>

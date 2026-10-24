@@ -8,6 +8,7 @@ import { getMe, resetDemo, signOut } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import { useAdminData } from './useAdminData';
 import { Avatar } from './kit';
+import { DolarChip } from '@/components/Pesos';
 import Login from './Login';
 import SellerHome from './SellerHome';
 import Clients from './Clients';
@@ -152,6 +153,7 @@ export default function AdminApp({ products, reload: reloadProducts }) {
                 {ownerMode ? <User size={17} /> : <Crown size={17} />} {ownerMode ? 'Volver a modo vendedor' : 'Modo dueño'}
               </button>
             )}
+            <DolarChip className="px-2 text-xs text-muted" />
             <Link to="/" className="flex items-center gap-2 px-2 text-sm text-muted hover:text-ink">
               <Eye size={16} /> Ver tienda
             </Link>
@@ -176,7 +178,9 @@ export default function AdminApp({ products, reload: reloadProducts }) {
             <Avatar name={me.name} owner={isOwner} size={34} />
             <div className="leading-tight">
               <div className="text-sm font-bold">{me.name}</div>
-              <div className="text-[11px] text-muted">{mode === 'owner' ? 'Modo dueño' : isInventory ? 'Inventario' : 'Vendedor'}</div>
+              <div className="text-[11px] text-muted">
+                {mode === 'owner' ? 'Modo dueño' : isInventory ? 'Inventario' : 'Vendedor'} · <DolarChip className="!gap-1" />
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

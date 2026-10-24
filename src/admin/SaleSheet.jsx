@@ -6,6 +6,7 @@ import { createSale } from '@/lib/store';
 import { cn, formatPrice, getCondition } from '@/lib/utils';
 import { STORE } from '@/config';
 import { ClientPicker } from './ClientSheet';
+import Pesos from '@/components/Pesos';
 
 const METHODS = ['Efectivo', 'Transferencia', 'Dólares', 'Tarjeta'];
 
@@ -171,6 +172,7 @@ export default function SaleSheet({ open, onClose, initial, products, prices, cl
                 <div>
                   <label className="label" htmlFor="sale-price">Precio de venta c/u ({STORE.currency})</label>
                   <input id="sale-price" type="number" inputMode="numeric" min="0" className="field text-lg font-bold" value={price} onChange={e => setPrice(e.target.value)} />
+                  <Pesos usd={unit * qty} prefix="En pesos (blue): " className="mt-1 block pl-1 text-xs text-muted" />
                 </div>
                 <div>
                   <span className="label">Cantidad</span>

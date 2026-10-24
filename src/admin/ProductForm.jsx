@@ -7,6 +7,7 @@ import { CONDITIONS, STATUSES, STORAGE_OPTIONS, STORE } from '@/config';
 import { deleteMedia, saveProduct, setOwnerPrice, uploadMedia } from '@/lib/store';
 import { cn, formatPrice } from '@/lib/utils';
 import DiagnosticEditor from './DiagnosticEditor';
+import Pesos from '@/components/Pesos';
 
 const MODELS = [
   'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone Air', 'iPhone 17',
@@ -326,6 +327,7 @@ export default function ProductForm({ initial, onClose, onSaved, isOwner, ownerP
               <div>
                 <label className="label" htmlFor="price">Precio ({STORE.currency}) *</label>
                 <input id="price" type="number" inputMode="numeric" min="0" className="field" value={p.price ?? ''} onChange={e => set({ price: e.target.value })} placeholder="Ej: 850" />
+                <Pesos usd={p.price} prefix="En la web se ve también: " className="mt-1 block pl-1 text-xs text-muted" />
               </div>
               <div>
                 <label className="label" htmlFor="cprice">Precio anterior (opcional)</label>

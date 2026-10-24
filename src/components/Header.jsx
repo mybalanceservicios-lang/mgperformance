@@ -4,6 +4,7 @@ import { RefreshCcw, Search } from 'lucide-react';
 import { STORE, TRADE_IN_MESSAGE } from '@/config';
 import { cn, waLink } from '@/lib/utils';
 import WhatsAppIcon from './WhatsAppIcon';
+import { DolarChip } from './Pesos';
 
 export function Logo({ className }) {
   return (
@@ -23,7 +24,9 @@ export default function Header() {
   const { pathname } = useLocation();
   const [scrolled, setScrolled] = useState(false);
 
-  useEffect(() => setQ(params.get('q') ?? ''), [params]);
+  useEffect(() => {
+    setQ(params.get('q') ?? '');
+  }, [params]);
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 10);
     on();
@@ -62,6 +65,7 @@ export default function Header() {
             <Search size={17} />
           </button>
         </form>
+        <DolarChip className="hidden shrink-0 rounded-full bg-white/5 px-3 py-1.5 text-xs font-medium text-white/75 xl:inline-flex" />
         <a
           href={waLink(TRADE_IN_MESSAGE)}
           target="_blank"

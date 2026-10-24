@@ -89,14 +89,14 @@ function useGeometries() {
   }, []);
 }
 
-/* Fondo de pantalla estilo iOS (violeta / azul / negro) generado con canvas */
+/* Fondo de pantalla estilo iOS (violeta / azul / negro) con la hora y fecha reales del visitante */
 let wallpaperTexture = null;
-function getWallpaper() {
-  if (wallpaperTexture) return wallpaperTexture;
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 1024;
-  const g = c.getContext('2d');
+let wallpaperCanvas = null;
+let clockTimer = null;
+
+function paintWallpaper() {
+  const g = wallpaperCanvas.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
   g.fillStyle = '#05030c';
   g.fillRect(0, 0, 512, 1024);
   const blob = (x, y, r, color) => {
@@ -110,16 +110,37 @@ function getWallpaper() {
   blob(430, 330, 460, 'rgba(37,99,235,0.85)');
   blob(260, 980, 360, 'rgba(147,51,234,0.7)');
   blob(80, 160, 300, 'rgba(14,165,233,0.35)');
-  // reloj de la pantalla bloqueada
-  g.fillStyle = 'rgba(255,255,255,0.92)';
-  g.font = '600 150px -apple-system, Inter, sans-serif';
+  // reloj de la pantalla bloqueada, como en un iPhone real
+  const now = new Date();
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const date = now.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).replace(',', '');
   g.textAlign = 'center';
-  g.fillText('9:41', 256, 300);
+  g.fillStyle = 'rgba(255,255,255,0.72)';
   g.font = '500 30px -apple-system, Inter, sans-serif';
-  g.fillStyle = 'rgba(255,255,255,0.7)';
-  g.fillText('viernes 24 de octubre', 256, 150);
-  wallpaperTexture = new THREE.CanvasTexture(c);
+  g.fillText(date, 256, 150);
+  g.fillStyle = 'rgba(255,255,255,0.93)';
+  g.font = '600 150px -apple-system, Inter, sans-serif';
+  g.fillText(time, 256, 300);
+  if (wallpaperTexture) wallpaperTexture.needsUpdate = true;
+}
+
+function getWallpaper() {
+  if (wallpaperTexture) return wallpaperTexture;
+  wallpaperCanvas = document.createElement('canvas');
+  wallpaperCanvas.width = 512;
+  wallpaperCanvas.height = 1024;
+  paintWallpaper();
+  wallpaperTexture = new THREE.CanvasTexture(wallpaperCanvas);
   wallpaperTexture.colorSpace = THREE.SRGBColorSpace;
+  // se redibuja justo al cambiar cada minuto
+  const tick = () => {
+    paintWallpaper();
+    clockTimer = setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+  };
+  clearTimeout(clockTimer);
+  clockTimer = setTimeout(tick, 60000 - (Date.now() % 60000) + 50);
+  // repinta cuando carga la tipografía
+  document.fonts?.ready.then(paintWallpaper);
   return wallpaperTexture;
 }
 

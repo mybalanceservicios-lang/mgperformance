@@ -10,6 +10,8 @@ import { phoneColor } from '@/components/Phone3D';
 import { STORE, TRADE_IN_MESSAGE } from '@/config';
 import { cn, formatPrice, getCondition, productUrl, waLink } from '@/lib/utils';
 import { family } from '@/components/Listing';
+import Pesos from '@/components/Pesos';
+import { formatARS, toPesos, useDolar } from '@/lib/dolar';
 
 function ago(iso) {
   const d = Math.floor((Date.now() - new Date(iso)) / 86400000);
@@ -22,7 +24,9 @@ function ago(iso) {
 function Gallery({ product }) {
   const media = product.media ?? [];
   const [i, setI] = useState(0);
-  useEffect(() => setI(0), [product.id]);
+  useEffect(() => {
+    setI(0);
+  }, [product.id]);
   if (!media.length)
     return (
       <div className="aspect-square">
@@ -90,7 +94,10 @@ export default function Product({ products, loading }) {
   const { id } = useParams();
   const [copied, setCopied] = useState(false);
   const product = products.find(p => p.id === id);
-  useEffect(() => window.scrollTo(0, 0), [id]);
+  const rate = useDolar();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [id]);
 
   const related = useMemo(
     () =>
@@ -116,7 +123,8 @@ export default function Product({ products, loading }) {
 
   const cond = getCondition(product.condition);
   const discount = off(product);
-  const consult = `Hola ${STORE.name}! Me interesa este equipo:\n\n${cardTitle(product)} · ${cond.label}${product.battery != null ? ` · Batería ${product.battery}%` : ''} — ${formatPrice(product.price)}\n${productUrl(product)}\n\n¿Sigue disponible?`;
+  const pesos = toPesos(product.price, rate);
+  const consult = `Hola ${STORE.name}! Me interesa este equipo:\n\n${cardTitle(product)} · ${cond.label}${product.battery != null ? ` · Batería ${product.battery}%` : ''} — ${formatPrice(product.price)}${pesos ? ` (${formatARS(pesos)})` : ''}\n${productUrl(product)}\n\n¿Sigue disponible?`;
   const tradeIn = `${TRADE_IN_MESSAGE}\n\nMe interesa: ${cardTitle(product)} (${formatPrice(product.price)})`;
 
   const share = async () => {
@@ -172,6 +180,12 @@ export default function Product({ products, loading }) {
               <span className="text-4xl font-light tracking-tight">{formatPrice(product.price)}</span>
               {discount > 0 && <span className="text-lg font-semibold text-ml-green">{discount}% OFF</span>}
             </div>
+            {rate?.venta && (
+              <p className="mt-1 text-[15px] text-white/70">
+                o <Pesos usd={product.price} className="font-semibold text-white" /> en pesos
+                <span className="block text-xs text-white/40">Dólar blue del día {formatARS(rate.venta)} · se actualiza solo</span>
+              </p>
+            )}
           </div>
 
           {product.battery != null && (
